@@ -3,10 +3,6 @@ import streamlit as st
 import json
 import os
 
-# todo: storage in s3
-# todo: shared storage
-# todo: different storage per app
-
 
 class SideBarStateMgr:
     # Class-level string table

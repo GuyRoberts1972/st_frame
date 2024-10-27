@@ -1,0 +1,42 @@
+
+# Step Framework 
+ - Add stored data branching 
+
+# App Features
+ - Permalink Prepared Chat, Publish a shared chat on a permalink, No nav bar, locked down.
+
+# Steps
+ - Separate out UI Render from doing the work to support non streamlit UI in future
+ - Common Step State mgmt.
+     - each step needs input, output and internal keys defined
+     - each step has can_run state - true if all inputs are available
+     - each step can be cleared and rerun, run (configurable as some its a no op)
+     - each step copy state button
+     - each step show hide
+     - should be able to map the flow and make style dependencies
+     - can have branching (tabs)
+     - can have loop backs
+
+# CICD
+ - GitHub Actions
+ - Unit test & coverage
+ - PyPi publish 
+ - Deploy to AWS
+
+# User Authentication 
+ - Azure AD
+ - Cognito
+
+# State Manager
+ - storage 
+  - storage in s3
+  - shared storage between users
+  - different storage user
+  - folder navigation 
+
+# Templates
+ - Editor
+
+# Retrievers
+ - confluence
+ - microsoft graph

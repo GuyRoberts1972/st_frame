@@ -103,32 +103,6 @@ class LangChainUtils:
         chain = prompt | chat_model
         response = chain.invoke({"input": ""})
         return response.content
-    
-    @staticmethod
-    def chat_prompt_response_old(chat_model, initial_system_prompt, human_prompt, prior_chat_history=None):
-        prompt = ChatPromptTemplate.from_messages([
-            ("system", initial_system_prompt),
-            MessagesPlaceholder(variable_name="history"),
-            ("human", "{input}")
-        ])
-
-        # Initialize memory with prior chat history if provided
-        if prior_chat_history:
-            memory = ConversationBufferMemory(return_messages=True, chat_memory=prior_chat_history)
-        else:
-            memory = ConversationBufferMemory(return_messages=True)
-
-        conversation = ConversationChain(
-            memory=memory,
-            prompt=prompt,
-            llm=chat_model
-        )
-
-        # Send it to the model
-        response = conversation.predict(input=human_prompt)
-        return response, conversation.memory
-    
-
 
     @staticmethod
     def chat_prompt_response(chat_model, initial_system_prompt, human_prompt, prior_chat_history=None):

@@ -131,26 +131,7 @@ def handle_template_selection(template_folder):
 
 if __name__ == '__main__':
 
-# done: fix the file upload state persistance
-# todo: incident notification use case
-    # todo: add tabs 
-    # todo: split out summary and advisor, assitant flow types 
-    # todo: add expert flow 
-# todo: RCA authoring use case 
-# todo: create an SOP
-# todo: incident mgmt flow with RCA as closure action
 
-# todo: PGM
-# todo: assess ticket hygiene
-# todo: project status summarisers
-# todo: corp pitch 
-# todo: finacial statement
-
-# todo: knowledge base use cases
-# todo: data warehouse query
-# todo: review LPM hygiene, get project status, do roadmap, 
-# todo: get SIM status, GCL adhoc review
-# todo: publish a prepared chat with a perma link
 
 
 
