@@ -2,6 +2,9 @@
 # Data files
 data/
 
+# POC
+poc/
+
 # Streamlit (including secrets.toml)
 .streamlit/
 

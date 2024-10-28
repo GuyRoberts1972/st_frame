@@ -1,9 +1,6 @@
 """ The main application """
 import streamlit as st
-from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
-from langchain_core.messages import SystemMessage
-from utils.side_bar_state_mgr import SideBarStateMgr  
-from utils.flow_utils import FlowUtils
+from st_ui.side_bar_state_mgr import SideBarStateMgr  
 import yaml
 from utils.yaml_utils import YamlUtils
 import os
@@ -101,7 +98,7 @@ def handle_template_selection(template_folder):
         return True
  
     # Import selector
-    from utils.option_selector import OptionSelector
+    from st_ui.option_selector import OptionSelector
 
     # Load the template folders
     options = generate_groups(template_folder)

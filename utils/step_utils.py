@@ -34,8 +34,6 @@ class BaseFlowStep:
 
     def show(self):
         """ Show the step """
-        if self.heading:
-            st.subheader(self.heading)
         step_config = self.get_step_config()
         state_dict = self.get_app().get_state()
         self.do(step_config, state_dict)

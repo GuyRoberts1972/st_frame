@@ -108,7 +108,13 @@ class BaseFlowApp:
         for step_name, step in self.steps.items():
             step : BaseFlowStep = step
             if step.input_data_ready(state):
-                step.show()
+                if step.heading:
+                    st.divider()
+                    st.subheader(step.heading)
+                    with st.expander(f"Details ........ DONE"):
+                        step.show()
+                else:
+                    step.show()
 
         # Save state
         self.state_manager.save_current_state()

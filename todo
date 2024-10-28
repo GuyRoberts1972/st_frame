@@ -9,7 +9,37 @@
  - Separate out UI Render from doing the work to support non streamlit UI in future
  - Common Step State mgmt.
      - each step needs input, output and internal keys defined
-     - each step has can_run state - true if all inputs are available
+     - step states
+        - waitingOnDependencies - step can't start since it's dependent on upstream outputs
+        - waitingInQueue - not started yet as not my turn
+        - wipWaitingForStartAck - started but waiting for ack button
+        - wipWaitingUserInput - in progress awaiting user input
+        - wipWorking - in progress busy working
+        - wipWaitingforDoneAck - all done awaiting to be acknowledge
+        - done - next step can start 
+     - step options
+        - visibility:
+            - one of 
+                - never -  never show. Not valid if step needs user input
+                - always - show always. If ui needs upstream then needs holding message
+                - wipOrDone - show when in progress or done
+        - expandability
+            - idependent booleans
+                - startExpanded - start expanded
+                - autoExpandOnWip - auto expand going into a wip state 
+                - autoCollapseOutWip - auto collapse going out of wip state
+        - Visual elements
+            - title: set to text if shown
+            - start_ack_button: set to button text if there should be an aknowledge button 
+            - done_ack_button: set to button text 
+            - clear_button: clear outputs and state, back to wipWaitingForStartAck
+            - expandable - toggle open or close by user and expandability 
+            - copy data
+            - divider
+        - 
+     - generic actions 
+        - clear output 
+        - 
      - each step can be cleared and rerun, run (configurable as some its a no op)
      - each step copy state button
      - each step show hide
