@@ -48,7 +48,7 @@ class TestOptionSelector(unittest.TestCase):
         mock_radio.return_value = 2  # Select the third (disabled) sub-option
         mock_button.side_effect = [False, False]  # Neither button pressed
         self.selector._render_sub_options()
-        mock_button.assert_any_call(self.selector.STRINGS["CONFIRM_BUTTON"], disabled=True)
+        mock_button.assert_any_call(self.selector.STRINGS["ACTION_CONFIRM_BUTTON"], disabled=True)
 
     @patch('streamlit.radio')
     @patch('streamlit.button')

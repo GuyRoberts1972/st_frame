@@ -27,7 +27,7 @@ class SummaryFlowApp(BaseFlowApp):
         app.show_steps()
 
         # Save the state
-        app.state_manager.save_current_state()
+        app.state_manager.save_session_to_state()
 
         # Done
         return app
@@ -123,7 +123,7 @@ if __name__ == '__main__':
 
     # Stub class for saving
     class StubStatemanager:
-        def save_current_state(self):
+        def save_session_to_state(self):
             pass
 
     # Run the example app

@@ -94,7 +94,7 @@ def handle_template_selection(template_folder):
     ''' show the use case selection if not selected '''
     
     # Early out if we have a selected use case
-    if 'pdata_selected_use_case_path' in st.session_state:
+    if None != st.session_state.get('pdata_selected_use_case_path'):
         return True
  
     # Import selector
@@ -118,8 +118,18 @@ def handle_template_selection(template_folder):
     def on_cancel():
         pass
 
-    # Render it
+    # Create selector and set strings
     options_selector = OptionSelector(options, get_sub_options, on_select, on_cancel)
+    options_selector.STRINGS.update({
+        "TITLE": "Create New Session",
+        "SUB_OPTION_PROMPT": "Select your use case:",
+        "ACTION_CONFIRM_BUTTON": "Confirm",
+        "BACK_BUTTON": "Back",
+        "SUCCESS_MESSAGE": "You selected {sub_option} from {main_option}!",
+        "DISABLED_OPTION": "{option} (Coming Soon)"
+    })
+
+    # Render
     options_selector.render()
 
     # Not selected yet
@@ -127,10 +137,6 @@ def handle_template_selection(template_folder):
 
 
 if __name__ == '__main__':
-
-
-
-
 
 # Define the YAML string based on the earlier dictionary configuration
 

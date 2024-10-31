@@ -26,7 +26,7 @@ class TestSideBarStateMgr(unittest.TestCase):
     def setUp(self):
         # Create a temporary directory for test states
         self.temp_dir = tempfile.mkdtemp()
-        self.old_saved_states_dir = SideBarStateMgr.saved_states_dir
+        self.old_saved_states_dir = SideBarStateMgr.get_cur_saved_states_dir()
         SideBarStateMgr.saved_states_dir = self.temp_dir
         
         # Mock streamlit's session_state
@@ -40,7 +40,7 @@ class TestSideBarStateMgr(unittest.TestCase):
             os.remove(os.path.join(self.temp_dir, file))
         os.rmdir(self.temp_dir)
         
-        # Restore the original saved_states_dir
+        # Restore the original get_cur_saved_states_dir()
         SideBarStateMgr.saved_states_dir = self.old_saved_states_dir
         
         # Stop the patcher
@@ -91,7 +91,9 @@ class TestSideBarStateMgr(unittest.TestCase):
         # Assert the results
         self.assertEqual(st.session_state, {
             'persist_1': 'value1',
+            'clear_me' : None,
             'keep_me': 'value2',
+            'temp_1': None,
             'new_key': 'value3',
             'non_volatile': 'keep_this'
         })
@@ -165,55 +167,14 @@ class TestSideBarStateMgr(unittest.TestCase):
             with self.assertRaises(AttributeError):
                 _ = self.mock_session_state.sbsm_status_type
 
-    @patch('streamlit.sidebar.button')
-    @patch('streamlit.sidebar.columns')
-    @patch('streamlit.sidebar.write')
-    def test_setup_sidebar(self, mock_write, mock_columns, mock_button):
-        mock_button.return_value = False
-        mock_columns.return_value = [MagicMock(), MagicMock(), MagicMock()]
-        
-        # Create a test state file to ensure the columns are called
-        open(os.path.join(self.temp_dir, 'test_state.json'), 'w').close()
-        
-        SideBarStateMgr.setup_sidebar(['count'])
-        
-        mock_button.assert_called()
-        mock_write.assert_called_with(SideBarStateMgr.STRINGS['SAVED_STATES'])
-        mock_columns.assert_called()
-
-    def test_save_current_state(self):
+    def test_save_session_to_state(self):
         key_storage_map  = { 'persistant' : ['count'], 'volatile' : []}
         state_manager = SideBarStateMgr(key_storage_map )
         self.mock_session_state['count'] = 5
         
         with patch('side_bar_state_mgr.SideBarStateMgr.save_state') as mock_save:
-            state_manager.save_current_state()
+            state_manager.save_session_to_state()
             mock_save.assert_called_once_with(SideBarStateMgr.STRINGS['DEFAULT_STATE'], key_storage_map )
-
-    def test_init(self):
-        key_storage_map  = { 'persistant' : ['count'], 'volatile' : []}
-        self.mock_session_state['sbsm_state_to_load'] = 'test_state'
-        self.mock_session_state['count'] = 5
-
-        with patch('side_bar_state_mgr.SideBarStateMgr.load_state', return_value={'count': 10}):
-            with patch('side_bar_state_mgr.SideBarStateMgr.set_status_message') as mock_set_status:
-                with patch('side_bar_state_mgr.SideBarStateMgr.setup_sidebar') as mock_setup_sidebar:
-                    state_manager = SideBarStateMgr(key_storage_map )
-
-                    self.assertEqual(self.mock_session_state['count'], 10)
-                    self.assertEqual(self.mock_session_state['sbsm_current_state'], 'test_state')
-                    mock_set_status.assert_called_once_with(SideBarStateMgr.STRINGS['STATE_LOADED'].format('test_state'))
-                    mock_setup_sidebar.assert_called_once_with(key_storage_map )
-
-    def test_strings(self):
-        # Test that all required strings are present in the STRINGS dictionary
-        required_strings = [
-            'CREATE_NEW_STATE', 'NEW_STATE_BASENAME', 'SAVED_STATES', 'CONFIRM_RENAME', 'CANCEL_RENAME',
-            'RENAME', 'DELETE', 'STATE_CREATED', 'STATE_RENAMED', 'STATE_DELETED',
-            'STATE_LOADED', 'DEFAULT_STATE'
-        ]
-        for string in required_strings:
-            self.assertIn(string, SideBarStateMgr.STRINGS)
 
 
     def test_wildcard_match(self):

@@ -100,7 +100,7 @@ class BaseFlowStep:
         key =  prefix + self.get_name() + '_' + '_'.join(args)
         return key
     
-    def input_data_ready(self, state):
+    def input_data_ready(self, state_dict):
         ''' Virtual - default: check all dependency output keys are present '''
 
         # Get the dependencies and check if each output is ready
@@ -109,7 +109,7 @@ class BaseFlowStep:
             dependency_path = self.get_depends_on(dependency)
             dependency_step_name = self.step_name_from_path(dependency_path)
             dependency_output_key = self.app.get_step(dependency_step_name).get_output_key()
-            if dependency_output_key not in state:
+            if None == state_dict.get(dependency_output_key):
                 return False
 
         return True
@@ -157,9 +157,15 @@ class ChooseLLMFlavour(BaseFlowStep):
         """ Show the LLM flavours and allow the user to select """
 
         text = 'Choose the chat model'
-        key = self.format_item_key(True, 'model_select')
-        chat_model_choices = LangChainUtils.get_chat_model_choices().keys()
-        chat_model_choice = st.selectbox(text, chat_model_choices, key=key)
+        pkey = self.format_item_key(True, 'model_select')
+        chat_model_choices_list = list(LangChainUtils.get_chat_model_choices().keys())
+
+        # Handle None pkey - default to first choice
+        if None == state_dict.get(pkey):
+            state_dict[pkey] = chat_model_choices_list[0]
+
+        # Show selector
+        chat_model_choice = st.selectbox(text, chat_model_choices_list, key=pkey)
 
         # Store the choice
         state_dict[self.get_output_key()] = chat_model_choice
@@ -237,8 +243,8 @@ class DefineInputDataStep(BaseFlowStep):
                     all_defined = False
                     break
             elif type == 'uploaded_files':
-                file_types = ['pdf', 'docx', 'pptx', 'txt', 'xls', 'xlsx']
-                if vkey not in state_dict:
+                file_types = ['pdf', 'docx', 'pptx', 'txt', 'xls', 'xlsx', 'csv']
+                if None == state_dict.get(vkey):
                     temp_unique_key = vkey + str(int(time.time() * 1000000))
                     state_dict[vkey] = temp_unique_key
                 else:
@@ -339,7 +345,7 @@ class RetrieveDataStep(BaseFlowStep):
                         state_dict.pop(output_key, None)
                         break
 
-        if self.internal_log_key in state_dict:
+        if None != state_dict.get(self.internal_log_key):
             for log_item in state_dict[self.internal_log_key]:
                 st.write(log_item)
 
@@ -375,15 +381,24 @@ class SelectPromptFragmentsStep(BaseFlowStep):
  
         # Create output key
         output_key = self.get_output_key()
-        if output_key not in state_dict:
+        if None == state_dict.get(output_key):
             state_dict[output_key] = {}
 
         # Loop through options
         for item_key, item_def in fragment_options.items():
+            
+            # Get label, choices and peky
             label = item_def['label']
             choices = item_def['choices']
             pkey = self.format_item_key(True, item_key, 'choice')
-            choice = st.selectbox(label, list(choices.keys()), key=pkey)
+
+            # Handle None pkey by setting as first choice
+            choices_list = list(choices.keys())
+            if None == state_dict.get(pkey):
+                state_dict[pkey] = choices_list[0]
+
+            # Display and get the choice
+            choice = st.selectbox(label, choices_list, key=pkey)
             state_dict[output_key][item_key] = choices[choice]
 
     def get_output_subkeys(self):
@@ -467,7 +482,10 @@ class ChatLoopStep(BaseFlowStep):
                 retrieve_context=False):
         
             # Init the messages key in state for history storage
-            state_dict.setdefault(messages_key, [])
+            if state_dict.get(messages_key) == None:
+                state_dict[messages_key] = []
+            
+            # Short cut
             messages = state_dict[messages_key]
 
             # Show prior messages
@@ -522,13 +540,13 @@ class ChatLoopStep(BaseFlowStep):
 
         # Run button
         button_text = "Run"
-        if messages_key in state_dict:
+        if None != state_dict.get(messages_key):
             button_text = "Re-run"
         if st.button("Generate"):
             state_dict[messages_key] = []
 
         # If started show chat dialogue
-        if messages_key in state_dict:
+        if None != state_dict.get(messages_key):
 
             # Display chat dialogue      
             do_chat_loop(

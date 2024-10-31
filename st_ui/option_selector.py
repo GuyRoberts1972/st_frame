@@ -11,7 +11,7 @@ class OptionSelector:
     STRINGS = {
         "TITLE": "Choose an Option",
         "SUB_OPTION_PROMPT": "Please choose a sub-option:",
-        "CONFIRM_BUTTON": "Confirm",
+        "ACTION_CONFIRM_BUTTON": "Confirm",
         "BACK_BUTTON": "Back",
         "SUCCESS_MESSAGE": "You selected {sub_option} from {main_option}!",
         "DISABLED_OPTION": "{option} (Coming Soon)"
@@ -98,7 +98,7 @@ class OptionSelector:
         
         col1, col2 = st.columns(2)
         with col1:
-            if st.button(self.STRINGS["CONFIRM_BUTTON"], disabled=not selected_sub_option['enabled']):
+            if st.button(self.STRINGS["ACTION_CONFIRM_BUTTON"], disabled=not selected_sub_option['enabled']):
                 self.on_select(st.session_state.op_sel_selected_option_key, selected_key, selected_sub_option)
                 st.success(self.STRINGS["SUCCESS_MESSAGE"].format(
                     sub_option=selected_sub_option['title'], 
@@ -142,7 +142,7 @@ class OptionSelector:
         
         col1, col2 = st.columns(2)
         with col1:
-            if st.button(self.STRINGS["CONFIRM_BUTTON"], disabled=not selected_sub_option['enabled']):
+            if st.button(self.STRINGS["ACTION_CONFIRM_BUTTON"], disabled=not selected_sub_option['enabled']):
                 self.on_select(st.session_state.op_sel_selected_option_key, selected_key, selected_sub_option)
                 st.success(self.STRINGS["SUCCESS_MESSAGE"].format(
                     sub_option=selected_sub_option['title'], 

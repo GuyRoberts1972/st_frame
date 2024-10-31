@@ -106,7 +106,7 @@ class TestBaseFlowApp(unittest.TestCase):
         
         mock_step1.show.assert_called_once()
         mock_step2.show.assert_called_once()
-        self.state_manager.save_current_state.assert_called_once()
+        self.state_manager.save_session_to_state.assert_called_once()
 
 if __name__ == '__main__':
     unittest.main()

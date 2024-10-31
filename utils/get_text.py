@@ -3,6 +3,8 @@ import requests
 from bs4 import BeautifulSoup
 import PyPDF2
 import docx
+import csv
+import io
 from pptx import Presentation
 import pandas as pd
 import os
@@ -48,7 +50,9 @@ class TxtGetter:
         "application/vnd.openxmlformats-officedocument.presentationml.presentation": lambda file: TxtGetter.from_pptx(file),
         "text/plain": lambda file: TxtGetter.from_txt(file),
         "application/vnd.ms-excel": lambda file: TxtGetter.from_xls(file),
-        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": lambda file: TxtGetter.from_xls(file)
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": lambda file: TxtGetter.from_xls(file),
+        "text/csv": lambda file: TxtGetter.from_csv(file)
+
     }
 
      
@@ -132,14 +136,25 @@ class TxtGetter:
         return text.strip()
 
     @staticmethod
-    def from_txt(file):
+    def from_txt(file_path):
         """ from a text file """
-        return file.getvalue().decode("utf-8")
+        with open(file_path, 'r', encoding='utf-8') as file:
+            return file.read()
 
     @staticmethod
-    def from_xls(file):
-        df = pd.read_excel(file)
+    def from_xls(file_path):
+        df = pd.read_excel(file_path)
         return df.to_string()
+    
+    @staticmethod
+    def from_csv(file_path):
+        text = ""
+        with open(file_path, 'r', encoding='utf-8') as file:
+            csv_reader = csv.reader(file)
+            for row in csv_reader:
+                text += ", ".join(row) + "\n"
+        return text
+
 
     @staticmethod
     def from_uploaded_files(uploaded_files):

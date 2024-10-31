@@ -5,6 +5,11 @@
 # App Features
  - Permalink Prepared Chat, Publish a shared chat on a permalink, No nav bar, locked down.
 
+# UI Clean up
+ - clean up all icons
+ - clean up all strings
+ - make inputs waiting configurable 
+ 
 # Steps
  - Separate out UI Render from doing the work to support non streamlit UI in future
  - Common Step State mgmt.
