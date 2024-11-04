@@ -32,6 +32,10 @@ class BaseFlowApp:
         """ Get the step section of config """
         return self.config['steps'][step_name]
     
+    def get_config(self):
+        """ Get the config """
+        return self.config
+    
     def get_state(self):
         """ Get the state (pseudo) dict """
         return st.session_state
@@ -47,6 +51,15 @@ class BaseFlowApp:
     def get_step(self, step_name):
          """ Get the step by name """
          return self.steps[step_name]
+    
+    def get_prev_step(self, step_name):
+        """ Get the step previous to the named one - or None """
+        step_names = list(self.steps.keys())
+        cur_index = step_names.index(step_name) 
+        if cur_index == 0:
+            return None
+        prev_step_name = step_names[cur_index - 1]
+        return self.steps[prev_step_name]
     
     def add_step(self, step : BaseFlowStep):
         """ Add a step, check its not a dupe and check 
@@ -69,7 +82,7 @@ class BaseFlowApp:
                 raise StepConfigException(f"Problem loading step '{step_name}'. Dependency step '{dep_step_name}' referenced by depedency '{dependency_name}' was not found")
         
             # If they key is a sub key on the step, check the step supports it
-            subkey_path = dependency_path.removeprefix(dep_step_name).removeprefix('.')
+            subkey_path = step.subkey_from_path(dependency_path, dep_step_name)
             if len(subkey_path) > 0:
                 dep_step = self.get_step(dep_step_name)
                 dep_step_output_subkeys = dep_step.get_output_subkeys()
@@ -100,18 +113,48 @@ class BaseFlowApp:
                     app=self,
                 )
             )
-        
+ 
     def show_steps(self):
+        """ Show the steps in the UI """
 
-        # Loop through steps saving
-        state = self.get_state()
-        for step_name, step in self.steps.items():
-            step : BaseFlowStep = step
-            if step.input_data_ready(state):
-                st.divider()
-                st.subheader(step.heading)
-                step.show()
-           
+        from poc.step_list import StepContainer
+        # Loop through steps
+        step_container = StepContainer()
+        flow_state = self.get_state()
+            
+        def render_step(step : BaseFlowStep, hide, expand, step_status, fn_step_content):
+            """ Render the entire step including the container """
+            
+            def fn_step_content_wrapper():
+                """ Render the step content and turn actions into buttons definitions """
+                actions = fn_step_content()
+                step_name = step.get_name()
+                
+                # Convert actions to buttons
+                buttons = []
+                for action, handler in actions.items():
+                    button = {
+                        "text" : action,
+                        "key" : f"step_action_button_{step_name}_{action}",
+                        "on_click" : handler
+                    }
+                    buttons.append(button)
+                
+                # Done
+                return buttons
 
+            # Visually show step state on header
+            step_headng = f"{step_status} - {step.heading}"
+                        
+            # Render the step in the container
+            if hide:
+                fn_step_content()
+            else:
+                step_container.render_step(step_headng, fn_step_content_wrapper, expand)
+
+        # Show each of the steps
+        for _, step in self.steps.items():
+            step.show(flow_state, render_step)
+                
         # Save state
         self.state_manager.save_session_to_state()

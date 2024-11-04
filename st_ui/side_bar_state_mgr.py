@@ -184,6 +184,7 @@ class SideBarStateMgr:
                 default_index=0,
                 on_change=on_state_select,
                 key='sbsm_on_state_select_key',
+                styles={ "nav-link": { "--hover-color": "#eee" }},
                 manual_select=manual_select
             )
 
@@ -287,6 +288,11 @@ class SideBarStateMgr:
             if col2.button(SideBarStateMgr.STRINGS['ACTION_CANCEL'], key=f"sbsm_cancel_delete_{current_state}"):
                 st.session_state.sbsm_selected_action = None
                 st.rerun()
+
+        def do_action_view_json():
+            from st_ui.json_viewer import JSONViewer
+            st.session_state.sbsm_selected_action = None
+            JSONViewer.view_json(st.session_state)
         
         def do_action_duplicate():
             """ Duplicate the selected state """
@@ -350,7 +356,7 @@ class SideBarStateMgr:
                 
                 # Our actions
                 new_session_action = SideBarStateMgr.STRINGS['CREATE_NEW_STATE']
-                actions = [new_session_action, 'Rename', 'Delete', "Duplicate"]
+                actions = [new_session_action, 'Rename', 'Delete', "Duplicate", "View JSON"]
 
                 def on_action_select(selected_action=None):
                     """ Handle action selection by setting the selected action on the key """
@@ -393,7 +399,7 @@ class SideBarStateMgr:
                     selected_action = st.session_state.get('sbsm_selected_action', None)
 
                     # Handle New
-                    if selected_action == "New":
+                    if selected_action == new_session_action:
                         do_action_create_new_state()
                         
                     # Handle Rename
@@ -407,6 +413,10 @@ class SideBarStateMgr:
                     # Handle Delete
                     elif selected_action == "Delete": 
                         do_action_delete()
+                    
+                    # Handle Delete
+                    elif selected_action == "View JSON": 
+                        do_action_view_json()
 
                         
             # Render the main nav 

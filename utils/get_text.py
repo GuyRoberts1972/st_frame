@@ -457,3 +457,68 @@ class TxtGetter:
         
         formatted_issues = format_issues_data(formatted_data)
         return formatted_issues
+    
+
+    @staticmethod
+    def from_confluence_page(page):
+        " get text from  "
+        from atlassian import Confluence
+        from urllib.parse import urlparse, parse_qs
+
+
+        def extract_page_id_from_url(url):
+            parsed_url = urlparse(url)
+            path = parsed_url.path
+            
+            # Check if the URL contains '/pages/' which is typical for Confluence
+            if '/pages/' in path:
+                # Extract the ID, which is typically the number after '/pages/'
+                page_id = path.split('/pages/')[1].split('/')[0]
+                return page_id
+            
+            # If '/pages/' is not in the URL, check for 'pageId' in query parameters
+            query_params = parse_qs(parsed_url.query)
+            if 'pageId' in query_params:
+                return query_params['pageId'][0]
+
+            # Raise error
+            raise ValueError(f"Unable to extract page ID from '{url}'")
+
+        # If the param is a URL extract the page id
+        if page.startswith('http'):
+            page_id = extract_page_id_from_url(page)
+        else:
+            page_id = page
+
+        # Confluence API setup
+        confluence = Confluence(
+            url=st.secrets['atlassian']['jira_url'],
+            username=st.secrets['atlassian']['email'],
+            password=st.secrets['atlassian']['api_token']
+        )
+
+        # Fetch the page content
+        page = confluence.get_page_by_id(page_id, expand='body.storage')
+        
+        # Extract HTML content
+        html_content = page['body']['storage']['value']
+        
+        # Parse HTML and extract text
+        soup = BeautifulSoup(html_content, 'html.parser')
+        text = soup.get_text(separator=' ')
+        
+        # Clean up the text
+        text = re.sub(r'\s+', ' ', text).strip()
+        
+        # Done
+        return text
+    
+    def from_confluence_pages(pages):
+
+        page_list = TxtGetterHelpers.split_string(pages)
+        text = ''
+        for page in page_list:
+            text = text + TxtGetter.from_confluence_page(page)
+            text = text + "\n\n"
+        
+        return text

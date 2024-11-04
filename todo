@@ -8,22 +8,36 @@
 # UI Clean up
  - clean up all icons
  - clean up all strings
- - make inputs waiting configurable 
- 
+ - done: make inputs waiting configurable 
+ - visibility = never
+ - Flow page clean up
+  [ ] Top title should be the name, then flow template, then flow type (summary). Created, updated, owner?
+
 # Steps
  - Separate out UI Render from doing the work to support non streamlit UI in future
  - Common Step State mgmt.
-     - each step needs input, output and internal keys defined
+    - features
+        [ ] show x steps of y
+        [ ] show a dependency tree
+        [ ] have a 'greyed' visibility that shows future steps in an a disabled manor
+        [ ] 'reset from here'  action  all subsequent steps
+        [ ] 'rerun from here'  action  all subsequent steps
+        [ ] 'dismiss' to hide the step
+        [ ] Top level flow actions (e.g. reset all, undismiss, reset stale)
+        [ ] staleness - show where steps have up stream dependecies that are fresher
+    - bugs  
+     [ ] - what todo when step is hidden and still shows text ()
+     [X] each step needs input, output and internal keys defined
      - step states
         - waitingOnDependencies - step can't start since it's dependent on upstream outputs
         - waitingInQueue - not started yet as not my turn
-        - wipWaitingForStartAck - started but waiting for ack button
         - wipWaitingUserInput - in progress awaiting user input
+        - wipWaitingForStartAck - started but waiting for ack button
         - wipWorking - in progress busy working
         - wipWaitingforDoneAck - all done awaiting to be acknowledge
         - done - next step can start 
      - step options
-        - visibility:
+        - visibility
             - one of 
                 - never -  never show. Not valid if step needs user input
                 - always - show always. If ui needs upstream then needs holding message
@@ -39,18 +53,22 @@
             - done_ack_button: set to button text 
             - clear_button: clear outputs and state, back to wipWaitingForStartAck
             - expandable - toggle open or close by user and expandability 
-            - copy data
+            - copy data to clip board
             - divider
         - 
-     - generic actions 
-        - clear output 
-        - 
+        - generic actions 
+            - clear output 
+            - copy data to clip board
+            - 
+
      - each step can be cleared and rerun, run (configurable as some its a no op)
      - each step copy state button
      - each step show hide
      - should be able to map the flow and make style dependencies
      - can have branching (tabs)
      - can have loop backs
+
+     - for the data input step file upload. allow the file to be downloaded again. Show what file was uploaded (when volatile state is gone)
 
 # CICD
  - GitHub Actions
@@ -71,7 +89,15 @@
 
 # Templates
  - Editor
+ - Anchors and aliases
 
 # Retrievers
- - confluence
- - microsoft graph
+ [ ] confluence
+ [ ] microsoft graph
+ [ ] web page scrapers
+ [ ] web download documents
+ [ ] JIRA tickets
+
+# Steps
+ [ ] - Add a DB query step to get data 
+ [ ] - Add a matplotlib step to render data 

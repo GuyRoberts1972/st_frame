@@ -135,14 +135,17 @@ def handle_template_selection(template_folder):
     # Not selected yet
     return False
 
-
-if __name__ == '__main__':
-
-# Define the YAML string based on the earlier dictionary configuration
-
-
+def main(): 
+    """ Main execution """
+    
     # Wide
-    st.set_page_config(layout="wide")
+    st.set_page_config(layout="wide", page_icon='🚀')
+
+    # Check if we should display the JSON viewer
+    from st_ui.json_viewer import JSONViewer
+    json_viewer = JSONViewer()
+    if json_viewer.run():
+        return
 
     # Setup state manager - specify state keys to persist
     key_storage_map = { 'persistant' : ['pdata_*'], 'volatile' : ['vdata_*']}
@@ -167,3 +170,6 @@ if __name__ == '__main__':
 
         except yaml.YAMLError as e:
             print(f"Error parsing YAML string: {e}")
+
+if __name__ == '__main__':
+    main()
