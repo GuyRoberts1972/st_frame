@@ -6,23 +6,6 @@ from utils.app_utils import BaseFlowApp
 
 
 
-# done: seperate getting chat model and input defs into seperate steps
-# done: make chat model selection stored in state 
-# done: seperate prompt template formatting and chat loop into seperate steps
-# done: get it integrated into main app
-# done: get existing templates reworked to new format
-# done: move classes to folders, add tests
-# todo: add add step validation at field level
-# todo: each step needs input, output and internal keys defined
-# todo: each step has can_run state - true if all inputs are available
-# todo: each step can be cleared and rerun, run (configurable as some its a no op)
-# todo: each step copy state button
-# todo: each step show hide
-# todo: should be able to map the flow and make style dependencies
-# todo: can have branching (tabs)
-# todo: can have loop backs
-# 
-
 
 
 class SummaryFlowApp(BaseFlowApp):
@@ -44,7 +27,7 @@ class SummaryFlowApp(BaseFlowApp):
         app.show_steps()
 
         # Save the state
-        app.state_manager.save_current_state()
+        app.state_manager.save_session_to_state()
 
         # Done
         return app
@@ -140,7 +123,7 @@ if __name__ == '__main__':
 
     # Stub class for saving
     class StubStatemanager:
-        def save_current_state(self):
+        def save_session_to_state(self):
             pass
 
     # Run the example app

@@ -1,9 +1,6 @@
 """ The main application """
 import streamlit as st
-from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
-from langchain_core.messages import SystemMessage
-from utils.side_bar_state_mgr import SideBarStateMgr  
-from utils.flow_utils import FlowUtils
+from st_ui.side_bar_state_mgr import SideBarStateMgr  
 import yaml
 from utils.yaml_utils import YamlUtils
 import os
@@ -48,7 +45,7 @@ def get_group_templates(subfolder, relative_path=""):
         return items
     
     for file in os.listdir(full_path):
-        if file.endswith('.yaml') and file != '_meta.yaml':
+        if file.endswith('.yaml') and not file.startswith('_'):
             file_path = os.path.join(full_path, file)
             item_data = load_yaml_file(file_path)
             
@@ -97,11 +94,11 @@ def handle_template_selection(template_folder):
     ''' show the use case selection if not selected '''
     
     # Early out if we have a selected use case
-    if 'pdata_selected_use_case_path' in st.session_state:
+    if None != st.session_state.get('pdata_selected_use_case_path'):
         return True
  
     # Import selector
-    from utils.option_selector import OptionSelector
+    from st_ui.option_selector import OptionSelector
 
     # Load the template folders
     options = generate_groups(template_folder)
@@ -121,44 +118,34 @@ def handle_template_selection(template_folder):
     def on_cancel():
         pass
 
-    # Render it
+    # Create selector and set strings
     options_selector = OptionSelector(options, get_sub_options, on_select, on_cancel)
+    options_selector.STRINGS.update({
+        "TITLE": "Create New Session",
+        "SUB_OPTION_PROMPT": "Select your use case:",
+        "ACTION_CONFIRM_BUTTON": "Confirm",
+        "BACK_BUTTON": "Back",
+        "SUCCESS_MESSAGE": "You selected {sub_option} from {main_option}!",
+        "DISABLED_OPTION": "{option} (Coming Soon)"
+    })
+
+    # Render
     options_selector.render()
 
     # Not selected yet
     return False
 
-
-if __name__ == '__main__':
-
-# done: fix the file upload state persistance
-# todo: incident notification use case
-    # todo: add tabs 
-    # todo: split out summary and advisor, assitant flow types 
-    # todo: add expert flow 
-# todo: RCA authoring use case 
-# todo: create an SOP
-# todo: incident mgmt flow with RCA as closure action
-
-# todo: PGM
-# todo: assess ticket hygiene
-# todo: project status summarisers
-# todo: corp pitch 
-# todo: finacial statement
-
-# todo: knowledge base use cases
-# todo: data warehouse query
-# todo: review LPM hygiene, get project status, do roadmap, 
-# todo: get SIM status, GCL adhoc review
-# todo: publish a prepared chat with a perma link
-
-
-
-# Define the YAML string based on the earlier dictionary configuration
-
-
+def main(): 
+    """ Main execution """
+    
     # Wide
-    st.set_page_config(layout="wide")
+    st.set_page_config(layout="wide", page_icon='🚀')
+
+    # Check if we should display the JSON viewer
+    from st_ui.json_viewer import JSONViewer
+    json_viewer = JSONViewer()
+    if json_viewer.run():
+        return
 
     # Setup state manager - specify state keys to persist
     key_storage_map = { 'persistant' : ['pdata_*'], 'volatile' : ['vdata_*']}
@@ -183,3 +170,6 @@ if __name__ == '__main__':
 
         except yaml.YAMLError as e:
             print(f"Error parsing YAML string: {e}")
+
+if __name__ == '__main__':
+    main()

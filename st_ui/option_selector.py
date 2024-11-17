@@ -11,7 +11,7 @@ class OptionSelector:
     STRINGS = {
         "TITLE": "Choose an Option",
         "SUB_OPTION_PROMPT": "Please choose a sub-option:",
-        "CONFIRM_BUTTON": "Confirm",
+        "ACTION_CONFIRM_BUTTON": "Confirm",
         "BACK_BUTTON": "Back",
         "SUCCESS_MESSAGE": "You selected {sub_option} from {main_option}!",
         "DISABLED_OPTION": "{option} (Coming Soon)"
@@ -66,51 +66,12 @@ class OptionSelector:
         cols = st.columns(2)
         for i, (key, option) in enumerate(self.options.items()):
             with cols[i % 2]:
-                if st.button(f"{option['icon']} {option['title']}\n{option['description']}", key=f"main_{key}"):
+                button_text = f"{option['icon']} **{option['title']}**\n\n{option['description']}"
+                if st.button(button_text,key=f"main_{key}"):   
                     st.session_state.op_sel_selected_option = option
                     st.session_state.op_sel_selected_option_key = key
                     st.rerun()
 
-    def _render_sub_options_old(self):
-        """Render the sub-options for the selected main option."""
-        st.write(f"You selected: {st.session_state.op_sel_selected_option['title']}")
-        st.write(self.STRINGS["SUB_OPTION_PROMPT"])
-        sub_options = self.get_sub_options(st.session_state.op_sel_selected_option_key)
-        
-        # Create a list of option names, disabling those that are not enabled
-        option_keys = list(sub_options.keys())
-        option_names = [
-            self.STRINGS["DISABLED_OPTION"].format(option=sub_options[key]['title']) 
-            if not sub_options[key]['enabled'] else sub_options[key]['title']
-            for key in option_keys
-        ]
-        
-        selected_index = st.selectbox(
-            "Sub-options",
-            range(len(option_names)),
-            format_func=lambda i: option_names[i]
-        )
-        
-        selected_key = option_keys[selected_index]
-        selected_sub_option = sub_options[selected_key]
-        
-        st.write(f"Description: {selected_sub_option['description']}")
-        
-        col1, col2 = st.columns(2)
-        with col1:
-            if st.button(self.STRINGS["CONFIRM_BUTTON"], disabled=not selected_sub_option['enabled']):
-                self.on_select(st.session_state.op_sel_selected_option_key, selected_key, selected_sub_option)
-                st.success(self.STRINGS["SUCCESS_MESSAGE"].format(
-                    sub_option=selected_sub_option['title'], 
-                    main_option=st.session_state.op_sel_selected_option['title']
-                ))
-        
-        with col2:
-            if st.button(self.STRINGS["BACK_BUTTON"]):
-                st.session_state.op_sel_selected_option = None
-                st.session_state.op_sel_selected_option_key = None
-                self.on_cancel()
-                st.rerun()
 
     def _render_sub_options(self):
         """Render the sub-options for the selected main option."""
@@ -142,7 +103,7 @@ class OptionSelector:
         
         col1, col2 = st.columns(2)
         with col1:
-            if st.button(self.STRINGS["CONFIRM_BUTTON"], disabled=not selected_sub_option['enabled']):
+            if st.button(self.STRINGS["ACTION_CONFIRM_BUTTON"], disabled=not selected_sub_option['enabled']):
                 self.on_select(st.session_state.op_sel_selected_option_key, selected_key, selected_sub_option)
                 st.success(self.STRINGS["SUCCESS_MESSAGE"].format(
                     sub_option=selected_sub_option['title'], 

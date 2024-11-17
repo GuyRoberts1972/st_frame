@@ -1,0 +1,94 @@
+
+# Step Framework 
+ - Add stored data branching 
+
+# App Features
+ - [ ] Permalink Prepared Chat, Publish a shared chat on a permalink, No nav bar, locked down.
+ - [ ] Daemone mode - run on a schedule in the back ground, maybe as a step function
+ - [ ] Take out put from other flows
+ - [ ] flows can have branching (tabs) .. i.e. different drafts like gemini
+ - [ ] non linear flows - can have loops 
+
+# UI Clean up
+ - clean up all icons
+ - clean up all strings
+ - Flow page clean up
+  [ ] Top title should be the name, then flow template, then flow type (summary). Created, updated, owner?
+
+# Steps
+ - [ ] Separate out UI Render from doing the work to support non streamlit UI in future
+ - Common Step State mgmt.
+    - bugs
+        [x] default value handling for data input def step
+        [x] steps become read only when done
+        [x] get data step needs to check if data already recieved
+        [ ] use enums for status and other items
+    - features
+        - layout
+            [ ] tiled layout
+            [ ] add icons and tool tips for state heading
+            [ ] show x steps of y
+            [ ] show a dependency tree
+            [ ] have a 'greyed' visibility that shows future steps in an a disabled manor
+        - actions
+            [ ] 'reset from here'  action  all subsequent steps
+            [ ] 'rerun from here'  action  all subsequent steps
+            [ ] 'dismiss' to hide the step
+            [ ] Top level flow actions (e.g. reset all, undismiss, reset stale)
+        - acknowledgement 
+            [ ] add a cancel or set to default on ack changes
+            [ ] split ack chnages into ack default and ack changes 
+        - step state 
+            [ ] staleness - show where steps have up stream dependecies that are fresher
+    
+     - button options
+        - [x] hierarchycal for each button type,  boolean, button name and hover text 
+        - [x] if enabled button shown depdending on status and function 
+        - [x] ack buttons create sub states of ACTIVE
+        - [x] default implementations to show ack messages
+        - [x] do functions know about aknowldgement for message 
+        - [x] info buttons - dont affect state just provide more info
+        - [x] change buttons reset state 
+
+     - step options
+        - [x] visibility
+        - [x] expandability
+        - [x] generic state descriptions
+    
+# CICD
+ - GitHub Actions
+ - Unit test & coverage
+ - PyPi publish 
+ - Deploy to AWS
+
+# User Authentication 
+ - Azure AD
+ - Cognito
+
+# State Manager
+ - storage 
+  - storage in s3
+  - shared storage between users
+  - different storage user
+  - folder navigation 
+
+# Templates
+ - Editor
+ - Anchors and aliases
+
+# Retrievers
+ [x] confluence
+ [ ] microsoft graph
+ [ ] web page scrapers
+ [ ] web download documents
+ [ ] JIRA tickets
+
+ # exporters
+ [ ] confluence
+ [ ] jira
+ [ ] download docs
+ [ ] share point 
+
+# Steps
+ [ ] - Add a DB query step to get data 
+ [ ] - Add a matplotlib step to render data 
