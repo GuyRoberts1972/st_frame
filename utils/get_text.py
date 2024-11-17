@@ -4,7 +4,8 @@ from bs4 import BeautifulSoup
 import PyPDF2
 import docx
 import csv
-import io
+from urllib.parse import urlparse, parse_qs, urljoin
+from atlassian import Confluence
 from pptx import Presentation
 import pandas as pd
 import os
@@ -42,7 +43,10 @@ class TxtGetterHelpers:
 
 
 
+
+
 class TxtGetter:
+    """ Class to expose methods to extract and format text from sources in an LLM ready way """
 
     EXTRACTORS = {
         "application/pdf": lambda file: TxtGetter.from_pdf(file),
@@ -52,7 +56,6 @@ class TxtGetter:
         "application/vnd.ms-excel": lambda file: TxtGetter.from_xls(file),
         "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": lambda file: TxtGetter.from_xls(file),
         "text/csv": lambda file: TxtGetter.from_csv(file)
-
     }
 
      
@@ -208,8 +211,21 @@ class TxtGetter:
         ''' given a url get the text '''
         response = requests.get(src)
         soup = BeautifulSoup(response.text, 'html.parser')
-        return ' '.join([p.get_text() for p in soup.find_all('p')])
-
+        text = f"Text extracted from: {src}\n\n"
+        return text + ' '.join([p.get_text() for p in soup.find_all('p')])
+    
+    @staticmethod
+    def from_urls(urls):
+        " get text for multiple urls  "
+        
+        url_list = TxtGetterHelpers.split_string(urls)
+        text = ''
+        for url in url_list:
+            text = text + TxtGetter.from_url(url)
+            text = text + "\n\n"
+        
+        return text
+    
     @staticmethod
     def from_jira_issue(issue_key):
         # Trim space
@@ -458,64 +474,100 @@ class TxtGetter:
         formatted_issues = format_issues_data(formatted_data)
         return formatted_issues
     
-
     @staticmethod
-    def from_confluence_page(page):
-        " get text from  "
-        from atlassian import Confluence
-        from urllib.parse import urlparse, parse_qs
+    def from_confluence_page(page_url_or_id):
+        """Extract text and metadata from a Confluence page, including tables and embedded components."""
+        
+        class ConfluencePageExtractor:
+            def __init__(self, url, username, api_token):
+                self.confluence = Confluence(
+                    url=url,
+                    username=username,
+                    password=api_token
+                )
 
+            def extract_page_id_from_url(self, url):
+                parsed_url = urlparse(url)
+                path = parsed_url.path
+                
+                if '/pages/' in path:
+                    page_id = path.split('/pages/')[1].split('/')[0]
+                    return page_id
+                
+                query_params = parse_qs(parsed_url.query)
+                if 'pageId' in query_params:
+                    return query_params['pageId'][0]
 
-        def extract_page_id_from_url(url):
-            parsed_url = urlparse(url)
-            path = parsed_url.path
-            
-            # Check if the URL contains '/pages/' which is typical for Confluence
-            if '/pages/' in path:
-                # Extract the ID, which is typically the number after '/pages/'
-                page_id = path.split('/pages/')[1].split('/')[0]
-                return page_id
-            
-            # If '/pages/' is not in the URL, check for 'pageId' in query parameters
-            query_params = parse_qs(parsed_url.query)
-            if 'pageId' in query_params:
-                return query_params['pageId'][0]
+                raise ValueError(f"Unable to extract page ID from '{url}'")
 
-            # Raise error
-            raise ValueError(f"Unable to extract page ID from '{url}'")
+            def from_confluence_page(self, page):
+                page_id = self.extract_page_id_from_url(page) if page.startswith('http') else page
 
-        # If the param is a URL extract the page id
-        if page.startswith('http'):
-            page_id = extract_page_id_from_url(page)
-        else:
-            page_id = page
+                # Fetch the page content with the 'view' representation
+                page_content = self.confluence.get_page_by_id(page_id, expand='body.view,version,metadata.labels')
+                
+                html_content = page_content['body']['view']['value']
+                soup = BeautifulSoup(html_content, 'html.parser')
 
-        # Confluence API setup
-        confluence = Confluence(
+                # Extract metadata
+                title = page_content['title']
+                author = page_content['version']['by']['displayName']
+                last_updated = datetime.fromisoformat(page_content['version']['when'].rstrip('Z')).strftime('%Y-%m-%d %H:%M:%S')
+                labels = [label['name'] for label in page_content['metadata']['labels']['results']]
+                
+                # Extract links
+                links = [{'text': a.text, 'href': urljoin(page, a['href'])} for a in soup.find_all('a', href=True)]
+
+                # Extract text, preserving structure and including rendered components
+                paragraphs = []
+                for element in soup.find_all(['p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'li', 'table', 'div']):
+                    if element.name == 'table':
+                        paragraphs.append("\n\nTABLE:\n" + element.get_text(separator=' | ', strip=True) + "\n")
+                    elif element.name == 'div' and 'data-macro-name' in element.attrs:
+                        macro_name = element['data-macro-name']
+                        paragraphs.append(f"\n[{macro_name.upper()}]\n{element.get_text(separator=' ', strip=True)}\n")
+                    else:
+                        text = element.get_text(strip=True)
+                        if text:
+                            if element.name.startswith('h'):
+                                paragraphs.append(f"\n\n{element.name.upper()}: {text}\n")
+                            elif element.name == 'li':
+                                paragraphs.append(f"• {text}")
+                            else:
+                                paragraphs.append(text)
+
+                text = " ".join(paragraphs)
+                text = re.sub(r'\s+', ' ', text)
+                text = re.sub(r'\n{3,}', '\n\n', text)
+
+                # Compile the final output using textwrap.dedent
+                output = textwrap.dedent(f"""
+                    Title: {title}
+                    Author: {author}
+                    Last Updated: {last_updated}
+                    Labels: {', '.join(labels)}
+                    URL: {page}
+
+                    Content:
+                    {text}
+
+                    Links:
+                    {json.dumps(links, indent=2)}
+                """).strip()
+
+                return output
+        # Usage
+        extractor = ConfluencePageExtractor(
             url=st.secrets['atlassian']['jira_url'],
             username=st.secrets['atlassian']['email'],
-            password=st.secrets['atlassian']['api_token']
+            api_token=st.secrets['atlassian']['api_token']
         )
+        content = extractor.from_confluence_page(page_url_or_id)
+        return content
 
-        # Fetch the page content
-        page = confluence.get_page_by_id(page_id, expand='body.storage')
-        
-        # Extract HTML content
-        html_content = page['body']['storage']['value']
-        
-        # Parse HTML and extract text
-        soup = BeautifulSoup(html_content, 'html.parser')
-        text = soup.get_text(separator=' ')
-        
-        # Clean up the text
-        text = re.sub(r'\s+', ' ', text).strip()
-        
-        # Done
-        return text
-    
-    def from_confluence_pages(pages):
+    def from_confluence_pages(page_urls_or_ids):
 
-        page_list = TxtGetterHelpers.split_string(pages)
+        page_list = TxtGetterHelpers.split_string(page_urls_or_ids)
         text = ''
         for page in page_list:
             text = text + TxtGetter.from_confluence_page(page)

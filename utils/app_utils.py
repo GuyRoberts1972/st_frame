@@ -1,7 +1,7 @@
 """ Base class for flow apps """
 import streamlit as st
 from utils.get_text import TxtGetter as TxtGetter
-from utils.step_utils import BaseFlowStep, StepConfigException
+from utils.step_utils import BaseFlowStep, StepConfigException, StepStatus
 from typing import Dict, Any
 
 
@@ -117,7 +117,7 @@ class BaseFlowApp:
     def show_steps(self):
         """ Show the steps in the UI """
 
-        from poc.step_list import StepContainer
+        from st_ui.step_list import StepContainer
         # Loop through steps
         step_container = StepContainer()
         flow_state = self.get_state()
@@ -132,25 +132,23 @@ class BaseFlowApp:
                 
                 # Convert actions to buttons
                 buttons = []
-                for action, handler in actions.items():
-                    button = {
-                        "text" : action,
-                        "key" : f"step_action_button_{step_name}_{action}",
-                        "on_click" : handler
-                    }
-                    buttons.append(button)
+                for action in actions:
+                    if action:
+                        button = action.copy()
+                        button['key'] = f"step_action_button_{step_name}_{action['text']}"
+                        buttons.append(button)
+                    else:
+                        pass
                 
                 # Done
                 return buttons
 
             # Visually show step state on header
-            step_headng = f"{step_status} - {step.heading}"
+            status_name = StepStatus.get_name(step_status)
+            step_headng = f"{status_name} {step.heading}"
                         
             # Render the step in the container
-            if hide:
-                fn_step_content()
-            else:
-                step_container.render_step(step_headng, fn_step_content_wrapper, expand)
+            step_container.render_step(step_headng, fn_step_content_wrapper, expand, hide)
 
         # Show each of the steps
         for _, step in self.steps.items():

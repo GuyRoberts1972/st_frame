@@ -45,7 +45,7 @@ def get_group_templates(subfolder, relative_path=""):
         return items
     
     for file in os.listdir(full_path):
-        if file.endswith('.yaml') and file != '_meta.yaml':
+        if file.endswith('.yaml') and not file.startswith('_'):
             file_path = os.path.join(full_path, file)
             item_data = load_yaml_file(file_path)
             

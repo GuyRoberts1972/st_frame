@@ -96,6 +96,17 @@ class FlowUtils:
 
         return result
     
+    @staticmethod
+    def extract_urls_from_text(text) -> list:
+        """ Pass in some text, returns a list of URLs extracted """
+        # Extract the urls with a regex
+        pattern = r'https?://(?:[a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}(?::\d{1,5})?(?:/[^"\s<>{}|\^[\]`]+)*'
+
+        urls = list(set(re.findall(pattern, text)))
+        urls.sort()
+        return urls
+
+    @staticmethod
     def add_context_to_prompt(human_prompt: str) -> str:
         """
         Parse out links and other retrievable objects and add the text to the prompt.
@@ -107,33 +118,52 @@ class FlowUtils:
             str: The human prompt with added context.
         """        
         
-        url_pattern = r'http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\\(\\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+'
-        urls = re.findall(url_pattern, human_prompt)
+        # Extract the urls with a regex
+        urls = FlowUtils.extract_urls_from_text(human_prompt)
         
+        # Extract the jira issues using regex - put in set to dedupe
         project_list = st.secrets['atlassian']['jira_project_list'].split(',')
         jira_regex = r'\b(?:' + '|'.join(proj.strip() for proj in project_list) + r')-\d+\b'
         jira_issues = set(re.findall(jira_regex, human_prompt))
 
+        # Get the base jira URL so we can spot urls to confluence / JIRA
         jira_url = st.secrets['atlassian']['jira_url']
         
+        # Loop on urls
         url_contents = []
+        confluence_contents = []
         for url in urls:
             parsed_url = urlparse(url)
+
+            # See if it is a wiki or jira issues link
             if parsed_url.netloc == urlparse(jira_url).netloc:
                 if parsed_url.path.startswith('/browse'):
-                    issue_key = parsed_url.path.split('/')[-1]
-                    jira_issues.add(issue_key)
+                    
+                    # Jira issue - extract from path and add to set
+                    jira_issues = jira_issues | set(re.findall(jira_regex, parsed_url.path))
                 else:
+                    # Confluence
                     content = TxtGetter.from_confluence_page(url)
-                    url_contents.append(f"Content from {url}:\n{content}")
+                    confluence_contents.append(f"Content from confluence wiki {url}:\n{content}")
             else:
+                # URL
                 content = TxtGetter.from_url(url)
-                url_contents.append(f"Content from {url}:\n{content}")
+                url_contents.append(f"Content scraped from web url {url}:\n{content}")
         
+        # Add content to the prompts
+        if confluence_contents or url_contents or jira_issues:
+            human_prompt += "\n\n The following text related to the above was retrieved for context.\n\n".join(confluence_contents)
+
+        if confluence_contents:
+            human_prompt += "\n\n" + "\n\n".join(confluence_contents)
+
         if url_contents:
             human_prompt += "\n\n" + "\n\n".join(url_contents)
         
         if jira_issues:
+            # Sort them into a known order (for testing)
+            jira_issues = list(jira_issues)
+            jira_issues.sort()
             jira_issues_content = TxtGetter.from_jira_issues(' '.join(jira_issues))
             human_prompt += f"\n\n{jira_issues_content}"
         

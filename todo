@@ -3,73 +3,58 @@
  - Add stored data branching 
 
 # App Features
- - Permalink Prepared Chat, Publish a shared chat on a permalink, No nav bar, locked down.
+ - [ ] Permalink Prepared Chat, Publish a shared chat on a permalink, No nav bar, locked down.
+ - [ ] Daemone mode - run on a schedule in the back ground, maybe as a step function
+ - [ ] Take out put from other flows
+ - [ ] flows can have branching (tabs) .. i.e. different drafts like gemini
+ - [ ] non linear flows - can have loops 
 
 # UI Clean up
  - clean up all icons
  - clean up all strings
- - done: make inputs waiting configurable 
- - visibility = never
  - Flow page clean up
   [ ] Top title should be the name, then flow template, then flow type (summary). Created, updated, owner?
 
 # Steps
- - Separate out UI Render from doing the work to support non streamlit UI in future
+ - [ ] Separate out UI Render from doing the work to support non streamlit UI in future
  - Common Step State mgmt.
+    - bugs
+        [x] default value handling for data input def step
+        [x] steps become read only when done
+        [x] get data step needs to check if data already recieved
+        [ ] use enums for status and other items
     - features
-        [ ] show x steps of y
-        [ ] show a dependency tree
-        [ ] have a 'greyed' visibility that shows future steps in an a disabled manor
-        [ ] 'reset from here'  action  all subsequent steps
-        [ ] 'rerun from here'  action  all subsequent steps
-        [ ] 'dismiss' to hide the step
-        [ ] Top level flow actions (e.g. reset all, undismiss, reset stale)
-        [ ] staleness - show where steps have up stream dependecies that are fresher
-    - bugs  
-     [ ] - what todo when step is hidden and still shows text ()
-     [X] each step needs input, output and internal keys defined
-     - step states
-        - waitingOnDependencies - step can't start since it's dependent on upstream outputs
-        - waitingInQueue - not started yet as not my turn
-        - wipWaitingUserInput - in progress awaiting user input
-        - wipWaitingForStartAck - started but waiting for ack button
-        - wipWorking - in progress busy working
-        - wipWaitingforDoneAck - all done awaiting to be acknowledge
-        - done - next step can start 
+        - layout
+            [ ] tiled layout
+            [ ] add icons and tool tips for state heading
+            [ ] show x steps of y
+            [ ] show a dependency tree
+            [ ] have a 'greyed' visibility that shows future steps in an a disabled manor
+        - actions
+            [ ] 'reset from here'  action  all subsequent steps
+            [ ] 'rerun from here'  action  all subsequent steps
+            [ ] 'dismiss' to hide the step
+            [ ] Top level flow actions (e.g. reset all, undismiss, reset stale)
+        - acknowledgement 
+            [ ] add a cancel or set to default on ack changes
+            [ ] split ack chnages into ack default and ack changes 
+        - step state 
+            [ ] staleness - show where steps have up stream dependecies that are fresher
+    
+     - button options
+        - [x] hierarchycal for each button type,  boolean, button name and hover text 
+        - [x] if enabled button shown depdending on status and function 
+        - [x] ack buttons create sub states of ACTIVE
+        - [x] default implementations to show ack messages
+        - [x] do functions know about aknowldgement for message 
+        - [x] info buttons - dont affect state just provide more info
+        - [x] change buttons reset state 
+
      - step options
-        - visibility
-            - one of 
-                - never -  never show. Not valid if step needs user input
-                - always - show always. If ui needs upstream then needs holding message
-                - wipOrDone - show when in progress or done
-        - expandability
-            - idependent booleans
-                - startExpanded - start expanded
-                - autoExpandOnWip - auto expand going into a wip state 
-                - autoCollapseOutWip - auto collapse going out of wip state
-        - Visual elements
-            - title: set to text if shown
-            - start_ack_button: set to button text if there should be an aknowledge button 
-            - done_ack_button: set to button text 
-            - clear_button: clear outputs and state, back to wipWaitingForStartAck
-            - expandable - toggle open or close by user and expandability 
-            - copy data to clip board
-            - divider
-        - 
-        - generic actions 
-            - clear output 
-            - copy data to clip board
-            - 
-
-     - each step can be cleared and rerun, run (configurable as some its a no op)
-     - each step copy state button
-     - each step show hide
-     - should be able to map the flow and make style dependencies
-     - can have branching (tabs)
-     - can have loop backs
-
-     - for the data input step file upload. allow the file to be downloaded again. Show what file was uploaded (when volatile state is gone)
-
+        - [x] visibility
+        - [x] expandability
+        - [x] generic state descriptions
+    
 # CICD
  - GitHub Actions
  - Unit test & coverage
@@ -92,11 +77,17 @@
  - Anchors and aliases
 
 # Retrievers
- [ ] confluence
+ [x] confluence
  [ ] microsoft graph
  [ ] web page scrapers
  [ ] web download documents
  [ ] JIRA tickets
+
+ # exporters
+ [ ] confluence
+ [ ] jira
+ [ ] download docs
+ [ ] share point 
 
 # Steps
  [ ] - Add a DB query step to get data 
