@@ -74,7 +74,8 @@
 
 # Templates
  - Editor
- - Anchors and aliases
+ - [x] Anchors and aliases
+ - [ ] Custom merging based on jpath syntax
 
 # Retrievers
  [x] confluence

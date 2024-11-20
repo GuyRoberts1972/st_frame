@@ -52,14 +52,28 @@ class BaseFlowApp:
          """ Get the step by name """
          return self.steps[step_name]
     
+    def get_step_names(self):
+        """ Get the step name as a list """
+        step_names = list(self.steps.keys())
+        return step_names
+    
     def get_prev_step(self, step_name):
         """ Get the step previous to the named one - or None """
-        step_names = list(self.steps.keys())
+        step_names = self.get_step_names()
         cur_index = step_names.index(step_name) 
         if cur_index == 0:
             return None
         prev_step_name = step_names[cur_index - 1]
         return self.steps[prev_step_name]
+    
+    def get_next_step(self, step_name):
+        """ Get the step after to the named one - or None """
+        step_names = self.get_step_names()
+        cur_index = step_names.index(step_name) 
+        if cur_index >= len(step_names) -1:
+            return None
+        next_step_name = step_names[cur_index + 1]
+        return self.steps[next_step_name]
     
     def add_step(self, step : BaseFlowStep):
         """ Add a step, check its not a dupe and check 

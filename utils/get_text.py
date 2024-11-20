@@ -541,7 +541,7 @@ class TxtGetter:
                 text = re.sub(r'\n{3,}', '\n\n', text)
 
                 # Compile the final output using textwrap.dedent
-                output = textwrap.dedent(f"""
+                output = textwrap.dedent(f"""\
                     Title: {title}
                     Author: {author}
                     Last Updated: {last_updated}
