@@ -10,7 +10,7 @@ from utils.get_text import TxtGetter
 
 class FlowUtils:
     """ Static utility methods for flows """
-    
+
     ## Non UI helpers ###
 
     def print_session_state_keys(title=None):
@@ -36,16 +36,16 @@ class FlowUtils:
         """Save uploaded file with SHA256 prefix."""
         file_content = uploaded_file.read()
         sha256_hash = FlowUtils.calculate_sha256(file_content)
-        
+
         # Create new filename with SHA256 prefix
         original_filename = uploaded_file.name
         new_filename = f"{sha256_hash}_{original_filename}"
-        
+
         # Save file with new name
         file_path = os.path.join(FlowUtils.get_temp_dir(), new_filename)
         with open(file_path, "wb") as f:
             f.write(file_content)
-        
+
         return file_path
 
     @staticmethod
@@ -58,17 +58,17 @@ class FlowUtils:
             else:
                 return default
         return data
-    
+
     @staticmethod
     def estimate_tokens(text):
         # Remove extra whitespace and split into words
         words = re.findall(r'\w+', text.lower())
-        
+
         # Estimate tokens (assuming average of 1.3 tokens per word)
         estimated_tokens = int(len(words) * 1.3)
-        
+
         return estimated_tokens
-    
+
     @staticmethod
     def format_prompt(format_str, token_map, value_dict):
         # Find all unique tokens in the original string
@@ -89,13 +89,13 @@ class FlowUtils:
             return match.group(0)
 
         result = re.sub(r'\{(\w+)\}', replace_token, format_str)
-        
+
         # Check if there are any unreplaced tokens
         if original_tokens:
             raise Exception(f"The following tokens were not replaced: {', '.join(original_tokens)}")
 
         return result
-    
+
     @staticmethod
     def extract_urls_from_text(text) -> list:
         """ Pass in some text, returns a list of URLs extracted """
@@ -110,17 +110,17 @@ class FlowUtils:
     def add_context_to_prompt(human_prompt: str) -> str:
         """
         Parse out links and other retrievable objects and add the text to the prompt.
-        
+
         Args:
             human_prompt (str): The original human prompt.
-        
+
         Returns:
             str: The human prompt with added context.
-        """        
-        
+        """
+
         # Extract the urls with a regex
         urls = FlowUtils.extract_urls_from_text(human_prompt)
-        
+
         # Extract the jira issues using regex - put in set to dedupe
         project_list = st.secrets['atlassian']['jira_project_list'].split(',')
         jira_regex = r'\b(?:' + '|'.join(proj.strip() for proj in project_list) + r')-\d+\b'
@@ -128,7 +128,7 @@ class FlowUtils:
 
         # Get the base jira URL so we can spot urls to confluence / JIRA
         jira_url = st.secrets['atlassian']['jira_url']
-        
+
         # Loop on urls
         url_contents = []
         confluence_contents = []
@@ -138,7 +138,7 @@ class FlowUtils:
             # See if it is a wiki or jira issues link
             if parsed_url.netloc == urlparse(jira_url).netloc:
                 if parsed_url.path.startswith('/browse'):
-                    
+
                     # Jira issue - extract from path and add to set
                     jira_issues = jira_issues | set(re.findall(jira_regex, parsed_url.path))
                 else:
@@ -149,7 +149,7 @@ class FlowUtils:
                 # URL
                 content = TxtGetter.from_url(url)
                 url_contents.append(f"Content scraped from web url {url}:\n{content}")
-        
+
         # Add content to the prompts
         if confluence_contents or url_contents or jira_issues:
             human_prompt += "\n\n The following text related to the above was retrieved for context.\n\n".join(confluence_contents)
@@ -159,14 +159,13 @@ class FlowUtils:
 
         if url_contents:
             human_prompt += "\n\n" + "\n\n".join(url_contents)
-        
+
         if jira_issues:
             # Sort them into a known order (for testing)
             jira_issues = list(jira_issues)
             jira_issues.sort()
             jira_issues_content = TxtGetter.from_jira_issues(' '.join(jira_issues))
             human_prompt += f"\n\n{jira_issues_content}"
-        
+
         return human_prompt
 
- 

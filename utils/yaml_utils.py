@@ -15,7 +15,7 @@ class RefResolver:
 
     @staticmethod
     def _merge_nested(target, source):
-        """ Source should be merged into target overwriting equivalent 
+        """ Source should be merged into target overwriting equivalent
         existing data in target but preserving data in target if there is no equivalent data in source """
         if isinstance(source, dict):
             for key, value in source.items():
@@ -40,7 +40,7 @@ class RefResolver:
             target = source
         # Done
         return target
-    
+
     def _get_by_path(self, obj, path):
         """Retrieve a value from a nested dictionary using a path string."""
         try:
@@ -49,7 +49,7 @@ class RefResolver:
             return reduced
         except (KeyError, TypeError):
             raise ValueError(f"Invalid reference path: {path}")
-        
+
     def _handle_allof_key(self, ref_value, resolved_value, container_dict, data):
         """ Handle the ref key """
         if isinstance(resolved_value, dict):
@@ -57,9 +57,9 @@ class RefResolver:
         else:
             value_type = type(resolved_value)
             raise ValueError(f"'{self.allof_key}' only supports dict types. '{ref_value}' was '{value_type}'")
-        
+
         return container_dict
-    
+
     def _handle_ref_key(self, ref_value, resolved_value, container_dict, data):
         """ Handle the ref key """
         if isinstance(resolved_value, dict):
@@ -67,19 +67,19 @@ class RefResolver:
         else:
             value_type = type(resolved_value)
             raise ValueError(f"'{self.ref_key}' only supports dict types. '{ref_value}' was '{value_type}'")
-        
+
         return container_dict
-        
+
     def _handle_special_key(self, value, container_dict, data, key):
         """ Handle one of the special keys """
-        
+
         # Singleton or list
         if isinstance(value, str):
             ref_values = [value]
         elif isinstance(value, list):
             ref_values = value
         else:
-            raise ValueError(f"Reference value '{value}' should be a single or list of reference strings")  
+            raise ValueError(f"Reference value '{value}' should be a single or list of reference strings")
 
         # Loop through references
         for ref_value in ref_values:
@@ -92,7 +92,7 @@ class RefResolver:
             if ref_value in self.resolution_path:
                 raise ValueError(f"Circular reference detected: {ref_value}")
             self.resolution_path.append(ref_value)
-            
+
             try:
 
                 # Look up the reference
@@ -105,9 +105,9 @@ class RefResolver:
                     self._handle_allof_key(ref_value, resolved_value, container_dict, data)
                 else:
                     raise ValueError(f"unkown special key {key}")
-                
+
             finally:
-                
+
                 # Remove from circular dependency check
                 self.resolution_path.pop()
 
@@ -119,7 +119,7 @@ class RefResolver:
             new_dict = {}
             for key, value in obj.items():
                 if key.startswith(self.key_prefix):
-                   
+
                    # Handle reference key
                    new_dict = self._handle_special_key(value, new_dict, data, key)
                 else:
@@ -132,29 +132,29 @@ class RefResolver:
                     else:
                         new_dict[key] = self._merge_nested(new_dict[key] , resolved)
                         pass
-            
+
             # Done
             return new_dict
-        
+
         elif isinstance(obj, list):
             # Recursively resolve each item in the list
             return [self._resolve_recursive(item, data) for item in obj]
         else:
             # For primitive types, return as is
             return obj
-            
+
     def resolve(self, data):
-       
+
 
         # Start resolution with a deep copy of the data to avoid modifying the original
         return self._resolve_recursive(copy.deepcopy(data), data)
-    
+
     @staticmethod
     def resolve_refs(data):
         """Resolve all references in the given data structure."""
         resolver = RefResolver()
         return resolver.resolve(data)
-    
+
 class YamlUtils:
     @staticmethod
     def load_yaml_with_includes(file_path: str, include_lib_path: str) -> Dict[Any, Any]:
@@ -174,7 +174,7 @@ class YamlUtils:
 
         processed_content = '\n'.join(processed_lines)
         return yaml.safe_load(processed_content)
-    
+
     def load_yaml(file_path: str, include_lib_path: str) -> Dict[Any, Any]:
         """ Load the yaml with includes and reference resolution """
 
@@ -209,7 +209,7 @@ class YamlUtils:
         # Replace forward slashes with os-specific separator
         include_path = include_path.replace('/', os.path.sep)
         normalized_path = os.path.normpath(include_path)
-        
+
         # Check no parent dir navigatio
         if '..' in normalized_path.split(os.path.sep):
             raise ValueError(f"Library include must not navigate outside the library path: {include_path}")

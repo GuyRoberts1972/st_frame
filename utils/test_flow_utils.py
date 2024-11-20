@@ -1,3 +1,4 @@
+# pylint: disable=C0116
 import test_helper
 test_helper.setup_path()
 import unittest
@@ -6,27 +7,27 @@ from flow_utils import FlowUtils
 
 
 class TestURLExtraction(unittest.TestCase):
-    
+
     def test_simple_url(self):
         text = "Visit our website at https://www.example.com for more information."
         self.assertEqual(FlowUtils.extract_urls_from_text(text), ['https://www.example.com'])
-    
+
     def test_multiple_urls(self):
         text = "Check out http://site1.com and https://site2.org for great content!"
         self.assertEqual(FlowUtils.extract_urls_from_text(text), ['http://site1.com', 'https://site2.org'])
-    
+
     def test_url_with_path(self):
         text = "Article link: https://blog.example.com/articles/2023/05/15/ai-advancements"
         self.assertEqual(FlowUtils.extract_urls_from_text(text), ['https://blog.example.com/articles/2023/05/15/ai-advancements'])
-    
+
     def test_url_with_query_params(self):
         text = "Search results: https://search.example.com/results?q=python&page=1"
         self.assertEqual(FlowUtils.extract_urls_from_text(text), ['https://search.example.com/results?q=python&page=1'])
-    
+
     def test_url_with_special_characters(self):
         text = "Complex URL: https://api.example.com/v2/users/~johndoe/profile+settings"
         self.assertEqual(FlowUtils.extract_urls_from_text(text), ['https://api.example.com/v2/users/~johndoe/profile+settings'])
-    
+
     def test_no_urls(self):
         text = "This is a text without any URLs."
         self.assertEqual(FlowUtils.extract_urls_from_text(text), [])
@@ -122,7 +123,7 @@ class TestFlowUtils(unittest.TestCase):
         value_dict = {"person": {"name": "Alice"}}
         result = FlowUtils.format_prompt(format_str, token_map, value_dict)
         self.assertEqual(result, "Hello, Alice!")
-        
+
         # Test case 1a: Basic replacement - replace full string
         format_str = "{name}"
         token_map = {"name": "person.name"}
@@ -136,7 +137,7 @@ class TestFlowUtils(unittest.TestCase):
             token_map = {"name": "person.name"}
             value_dict = {"person": {"name": "Alice"}}
             result = FlowUtils.format_prompt(format_str, token_map, value_dict)
-        
+
         # Test case 1b.a: Basic replacement - missing token
         with self.assertRaises(Exception):
             format_str = "hello{un.recognised}goodbye"

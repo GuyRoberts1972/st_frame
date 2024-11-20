@@ -1,8 +1,8 @@
 """ The main application """
 import streamlit as st
-from st_ui.side_bar_state_mgr import SideBarStateMgr  
+from st_ui.side_bar_state_mgr import SideBarStateMgr
 import yaml
-from utils.yaml_utils import YamlUtils, RefResolver
+from utils.yaml_utils import YamlUtils
 import os
 
 def load_yaml_file(file_path):
@@ -20,10 +20,10 @@ def get_base_dir():
 
 def generate_groups(relative_path=""):
     options = {}
-    
+
     base_dir = get_base_dir()
     full_path = os.path.join(base_dir, relative_path)
-    
+
     for item in os.listdir(full_path):
         item_path = os.path.join(full_path, item)
         if os.path.isdir(item_path):
@@ -35,22 +35,22 @@ def generate_groups(relative_path=""):
                     "title": meta_data.get("title", ""),
                     "description": meta_data.get("description", "")
                 }
-    
+
     return options
 
 def get_group_templates(subfolder, relative_path=""):
     items = {}
     base_dir = get_base_dir()
     full_path = os.path.join(base_dir, relative_path, subfolder)
-    
+
     if not os.path.isdir(full_path):
         return items
-    
+
     for file in os.listdir(full_path):
         if file.endswith('.yaml') and not file.startswith('_'):
             file_path = os.path.join(full_path, file)
             item_data = load_yaml_file(file_path)
-            
+
             # Use the filename (without extension) as the key
             item_key = os.path.splitext(file)[0]
             items[item_key] = {
@@ -58,7 +58,7 @@ def get_group_templates(subfolder, relative_path=""):
                 "description": item_data.get("description", ""),
                 "enabled": item_data.get("enabled", False)
             }
-    
+
     return items
 
 def load_and_run_static_method(relative_path, class_name, method_name, *args, **kwargs):
@@ -67,38 +67,38 @@ def load_and_run_static_method(relative_path, class_name, method_name, *args, **
 
     # Get the directory of the current script
     base_dir = get_base_dir()
-    
+
     # Construct the absolute path to the target Python file
     abs_path = os.path.normpath(os.path.join(base_dir, relative_path))
-    
+
     # Get the module name from the file name
     module_name = os.path.splitext(os.path.basename(abs_path))[0]
-    
+
     # Load the module specification
     spec = importlib.util.spec_from_file_location(module_name, abs_path)
-    
+
     # Create the module
     module = importlib.util.module_from_spec(spec)
-    
+
     # Execute the module
     spec.loader.exec_module(module)
-    
+
     # Get the class from the module
     target_class = getattr(module, class_name)
-    
+
     # Get the method from the class
     target_method = getattr(target_class, method_name)
-    
+
     # Call the method with the provided arguments
     return target_method(*args, **kwargs)
 
 def handle_template_selection(template_folder):
     ''' show the use case selection if not selected '''
-    
+
     # Early out if we have a selected use case
     if None != st.session_state.get('pdata_selected_use_case_path'):
         return True
- 
+
     # Import selector
     from st_ui.option_selector import OptionSelector
 
@@ -137,9 +137,9 @@ def handle_template_selection(template_folder):
     # Not selected yet
     return False
 
-def main(): 
+def main():
     """ Main execution """
-    
+
     # Wide
     st.set_page_config(layout="wide", page_icon='🚀')
 
