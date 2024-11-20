@@ -1,4 +1,4 @@
-# pylint: disable=C0116
+# pylint: disable=missing-function-docstring, missing-module-docstring, missing-class-docstring, protected-access
 def setup_path():
     """ update the python path so that modules under test in this folder can import other modules in this folder """
 

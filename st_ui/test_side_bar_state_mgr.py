@@ -1,10 +1,10 @@
-# pylint: disable=C0116
+# pylint: disable=missing-function-docstring, missing-module-docstring, missing-class-docstring, protected-access
 import unittest
 import os
 import json
 import tempfile
-import streamlit as st
 from unittest.mock import patch
+import streamlit as st
 from side_bar_state_mgr import SideBarStateMgr
 
 class MockSessionState(dict):
@@ -57,7 +57,7 @@ class TestSideBarStateMgr(unittest.TestCase):
 
     def test_load_state(self):
         test_state = {'count': 10, 'name': 'LoadTest'}
-        with open(os.path.join(self.temp_dir, 'test_load.json'), 'w') as f:
+        with open(os.path.join(self.temp_dir, 'test_load.json'), 'w', encoding='utf-8') as f:
             json.dump(test_state, f)
 
         key_storage_map  = { 'persistant' : ['count', 'name'], 'volatile' : ['vol_*']}
@@ -121,8 +121,8 @@ class TestSideBarStateMgr(unittest.TestCase):
 
     def test_get_saved_states(self):
         # Create some test state files
-        open(os.path.join(self.temp_dir, 'state1.json'), 'w').close()
-        open(os.path.join(self.temp_dir, 'state2.json'), 'w').close()
+        open(os.path.join(self.temp_dir, 'state1.json'), 'w', encoding='utf-8').close()
+        open(os.path.join(self.temp_dir, 'state2.json'), 'w', encoding='utf-8').close()
 
         states = SideBarStateMgr.get_saved_states()
         self.assertEqual(set(states), {'state1', 'state2'})
@@ -130,7 +130,7 @@ class TestSideBarStateMgr(unittest.TestCase):
     def test_delete_state(self):
         # Create a test state file
         test_file = os.path.join(self.temp_dir, 'test_delete.json')
-        open(test_file, 'w').close()
+        open(test_file, 'w', encoding='utf-8').close()
 
         SideBarStateMgr.delete_state('test_delete')
         self.assertFalse(os.path.exists(test_file))
@@ -139,7 +139,7 @@ class TestSideBarStateMgr(unittest.TestCase):
         # Create a test state file
         old_file = os.path.join(self.temp_dir, 'old_name.json')
         new_file = os.path.join(self.temp_dir, 'new_name.json')
-        open(old_file, 'w').close()
+        open(old_file, 'w', encoding='utf-8').close()
 
         SideBarStateMgr.rename_state('old_name', 'new_name')
         self.assertFalse(os.path.exists(old_file))
@@ -153,8 +153,8 @@ class TestSideBarStateMgr(unittest.TestCase):
         self.assertEqual(self.mock_session_state.sbsm_status_type, 'success')
 
     def test_show_status_message(self):
-        self.mock_session_state.sbsm_status_message = 'Test message'
-        self.mock_session_state.sbsm_status_type = 'success'
+        self.mock_session_state.sbsm_status_message = 'Test message' # pylint: disable=attribute-defined-outside-init
+        self.mock_session_state.sbsm_status_type = 'success' # pylint: disable=attribute-defined-outside-init
 
         with patch('streamlit.sidebar.success') as mock_success:
             SideBarStateMgr.show_status_message()

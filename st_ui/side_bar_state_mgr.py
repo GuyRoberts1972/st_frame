@@ -38,55 +38,58 @@ class SideBarStateMgr:
             elif key == pattern:
                 return True
         return False
-    
+
     @staticmethod
     def key_is_persistant(key, key_storage_map):
         """ persistant keys get saved and cleared and loaded with state changes """
         return SideBarStateMgr.key_matches_patterns(key, key_storage_map['persistant'])
-    
+
     @staticmethod
     def key_is_volatile(key, key_storage_map):
         """ volatile keys get cleared with state changes"""
-        volatile = SideBarStateMgr.key_matches_patterns(key, key_storage_map['volatile']) 
+        volatile = SideBarStateMgr.key_matches_patterns(key, key_storage_map['volatile'])
         return volatile
-        
+
     @staticmethod
     def set_session_state(key_storage_map, loaded_state):
-        
+
         # Clear any that are persistant or volatile first
         keys = list(st.session_state.keys())
         for key in keys:
             # Important: Set to None to clear. Deleting key does not clear widget cache
-            if SideBarStateMgr.key_is_persistant(key, key_storage_map): 
+            if SideBarStateMgr.key_is_persistant(key, key_storage_map):
                 st.session_state[key] = None
-            elif SideBarStateMgr.key_is_volatile(key, key_storage_map): 
+            elif SideBarStateMgr.key_is_volatile(key, key_storage_map):
                 st.session_state[key] = None
-        
+
         # Now set
         st.session_state.update(loaded_state)
-        
+
     @staticmethod
     def get_cur_saved_states_dir():
+        """ get the location where state is saved, creating if need be """
+
+        if not os.path.exists(SideBarStateMgr.saved_states_dir):
+            os.makedirs(SideBarStateMgr.saved_states_dir)
+
         return SideBarStateMgr.saved_states_dir
-    
+
     @staticmethod
     def get_state_path(name):
         return os.path.join(SideBarStateMgr.get_cur_saved_states_dir(), f"{name}.json")
-    
+
     @staticmethod
     def save_state(name, key_storage_map):
-        if not os.path.exists(SideBarStateMgr.get_cur_saved_states_dir()):
-            os.makedirs()
-        state_to_save = {key: st.session_state[key] for key in st.session_state 
+        state_to_save = {key: st.session_state[key] for key in st.session_state
                          if SideBarStateMgr.key_is_persistant(key, key_storage_map)}
-        with open(SideBarStateMgr.get_state_path(name), 'w') as f:
+        with open(SideBarStateMgr.get_state_path(name), 'w', encoding='utf-8') as f:
             json.dump(state_to_save, f)
 
     @staticmethod
     def load_state(name, key_storage_map):
-        with open(SideBarStateMgr.get_state_path(name), 'r') as f:
+        with open(SideBarStateMgr.get_state_path(name), 'r', encoding='utf-8') as f:
             loaded_state = json.load(f)
-        return {key: loaded_state[key] for key in loaded_state 
+        return {key: loaded_state[key] for key in loaded_state
                 if SideBarStateMgr.key_is_persistant(key, key_storage_map)}
 
     @staticmethod
@@ -110,14 +113,14 @@ class SideBarStateMgr:
             new_name = f'{name}_{index}'
             source_path = SideBarStateMgr.get_state_path(name)
             destination_path = SideBarStateMgr.get_state_path(new_name)
-            
+
             if not os.path.exists(destination_path):
                 try:
                     shutil.copy2(source_path, destination_path)
                     return new_name
-                except IOError as e:
-                    raise (f"Error copying file: {e}")
-            
+                except IOError as exc:
+                    raise RuntimeError(f"Error copying file: {exc}") from exc
+
             index += 1
 
     @staticmethod
@@ -135,7 +138,7 @@ class SideBarStateMgr:
             elif st.session_state.sbsm_status_type == 'info':
                 st.sidebar.info(st.session_state.sbsm_status_message)
             del st.session_state.sbsm_status_message
-            del st.session_state.sbsm_status_type     
+            del st.session_state.sbsm_status_type
 
     def setup_state_option_menu(self, saved_states, on_state_select):
         """ Render the state options menu and manage selected state
@@ -144,7 +147,7 @@ class SideBarStateMgr:
             if sbsm_manual_set_state_selected is set on session state then select that in the menu
             if sbsm_current_state is not set then select the first state and load that state into session
         """
-        
+
 
         # State menu
         if len(saved_states) > 0:
@@ -156,23 +159,23 @@ class SideBarStateMgr:
                 sbsm_manual_set_state_selected = st.session_state.sbsm_manual_set_state_selected
                 if sbsm_manual_set_state_selected in saved_states:
                     manual_select = saved_states.index(sbsm_manual_set_state_selected)
-                else: 
+                else:
                     manual_select = 0
-                
+
                 # Remove flag
                 del st.session_state.sbsm_manual_set_state_selected
 
             # Is current state not set?
-            elif  None == st.session_state.get('sbsm_current_state'): 
-                
+            elif  None is st.session_state.get('sbsm_current_state'):
+
                 # Default to first - Cases: App just loaded or selected item deleted
                 manual_select = 0
                 self.load_session_from_state(saved_states[0])
-            
+
             else:
                 # No manual select - use the menus state
                 manual_select = None
-            
+
             # Create the widget
             state_nav_heading = SideBarStateMgr.STRINGS['STATE_NAV_HEADING']
             state_icons = ["chat-left"] * len(saved_states)
@@ -192,7 +195,7 @@ class SideBarStateMgr:
 
         # Get the saved states
         saved_states = SideBarStateMgr.get_saved_states()
-        
+
         def on_state_select(key):
             """ Handle state selection """
 
@@ -200,7 +203,7 @@ class SideBarStateMgr:
             selected_state = st.session_state.get(key, None)
             if selected_state in saved_states:
                 if selected_state != st.session_state.get('sbsm_current_state'):
-                        st.session_state.sbsm_state_to_load = selected_state
+                    st.session_state.sbsm_state_to_load = selected_state
 
         def do_action_create_new_state():
             """ Create a new state """
@@ -208,11 +211,11 @@ class SideBarStateMgr:
             # Make a unique name
             counter = 1
             new_state_name = SideBarStateMgr.STRINGS['NEW_STATE_BASENAME'].format(counter)
-            
+
             while new_state_name in saved_states:
                 counter += 1
                 new_state_name = SideBarStateMgr.STRINGS['NEW_STATE_BASENAME'].format(counter)
-            
+
             # Clean slate and save
             SideBarStateMgr.set_session_state(self.key_storage_map, {})
             SideBarStateMgr.save_state(new_state_name, self.key_storage_map)
@@ -220,7 +223,7 @@ class SideBarStateMgr:
             # Set the current state and flag option menu needs to be set
             st.session_state.sbsm_current_state = new_state_name
             st.session_state.sbsm_manual_set_state_selected = new_state_name
-            
+
             # Set message
             SideBarStateMgr.set_status_message(SideBarStateMgr.STRINGS['STATE_CREATED'].format(new_state_name))
 
@@ -233,29 +236,31 @@ class SideBarStateMgr:
         def do_action_rename():
             """ Rename a state """
             # Prompt for rename
-            new_name = st.text_input('Rename:', value=current_state, key=f"sbsm_rename_state_edit")
+            new_name = st.text_input('Rename:', value=current_state, key="sbsm_rename_state_edit")
             col1, col2 = st.columns(2)
 
             # Confirm
             if col1.button(SideBarStateMgr.STRINGS['ACTION_CONFIRM'], key=f"sbsm_confirm_rename_{current_state}"):
-                
+
                 # Rename storage
                 if current_state != new_name:
 
                     # Check for dupes
                     if new_name in saved_states:
                         SideBarStateMgr.set_status_message(SideBarStateMgr.STRINGS['STATE_RENAME_DUPLICATE'].format(new_name), 'info')
-                    else: 
-                        try: 
+                    else:
+                        try:
                             # Try rename, set curent states and display message
                             SideBarStateMgr.rename_state(current_state, new_name)
                             st.session_state.sbsm_current_state = new_name
                             st.session_state.sbsm_manual_set_state_selected = new_name
                             SideBarStateMgr.set_status_message(SideBarStateMgr.STRINGS['STATE_RENAME_OK'].format(new_name))
 
-                        except:
-                            # Failed
-                            SideBarStateMgr.set_status_message(SideBarStateMgr.STRINGS['STATE_RENAME_ERROR'].format(new_name), 'error')
+                        except Exception as e: #pylint: disable=broad-exception-caught
+                            # Failed, display the message including the specific error
+                            err_msg = SideBarStateMgr.STRINGS['STATE_RENAME_ERROR'].format(new_name)
+                            detailed_err_msg = f"{err_msg}\nError details: {str(e)}"
+                            SideBarStateMgr.set_status_message(detailed_err_msg, 'error')
 
                 # clear action and rerun
                 st.session_state.sbsm_selected_action = None
@@ -274,11 +279,11 @@ class SideBarStateMgr:
 
             # Confirm delete
             if col1.button(SideBarStateMgr.STRINGS['ACTION_CONFIRM'], key=f"sbsm_confirm_delete_{current_state}"):
-                
+
                 # Delete file and clear current state
                 SideBarStateMgr.delete_state(current_state)
                 st.session_state.sbsm_current_state = None
-                
+
                 # Set status message, clear action and rerun
                 SideBarStateMgr.set_status_message(SideBarStateMgr.STRINGS['STATE_DELETED'].format(current_state))
                 st.session_state.sbsm_selected_action = None
@@ -293,23 +298,18 @@ class SideBarStateMgr:
             from st_ui.json_viewer import JSONViewer
             st.session_state.sbsm_selected_action = None
             JSONViewer.view_json(st.session_state)
-        
+
         def do_action_duplicate():
             """ Duplicate the selected state """
 
             # Delete file and clear current state
             duplicated_state = SideBarStateMgr.duplicate_state(current_state)
             st.session_state.sbsm_current_state = duplicated_state
-            
+
             # Set status message, clear action and rerun
             SideBarStateMgr.set_status_message(SideBarStateMgr.STRINGS['STATE_DUPLICATED_CREATED'].format(duplicated_state))
             st.session_state.sbsm_selected_action = None
             st.rerun()
-
-            # Cancel delete
-            if col2.button(SideBarStateMgr.STRINGS['ACTION_CANCEL'], key=f"sbsm_cancel_delete_{current_state}"):
-                st.session_state.sbsm_selected_action = None
-                st.rerun()
 
         # Render
         with st.sidebar:
@@ -317,43 +317,43 @@ class SideBarStateMgr:
             # Custom styling for actions
             st.markdown("""
                 <style>
-                        
-                /* The custom actions box */ 
+
+                /* The custom actions box */
                 .st-key-custom_action_container {
                     border: 2px solid white;
                     padding: 20px;
                     border-radius: .5rem;
                     background-color: white;
                 }
-                
-                /* Get rid of the little message */ 
+
+                /* Get rid of the little message */
                 .st-key-custom_action_container .stTextInput {
                     width: fit-content;
                 }
-                
-                /* Grey background for the edit input */ 
+
+                /* Grey background for the edit input */
                 .st-key-custom_action_container input {
                     background-color: rgb(240, 242, 246);
                 }
-                
+
                 /* Hide the 'press enter to apply' */
                 .st-key-sbsm_rename_state_edit div[data-testid="InputInstructions"] {
                     visibility: hidden;
                 }
 
-                /* Make the action title underline fit & match */  
+                /* Make the action title underline fit & match */
                 .st-key-custom_action_container hr {
                     width: 90%;
                     background-color: rgb(227 231 241);
                 }
-                        
+
             </style>
             """, unsafe_allow_html=True)
 
             # Container for actions and related widgets
             action_container = st.container(key='custom_action_container')
             with action_container:
-                
+
                 # Our actions
                 new_session_action = SideBarStateMgr.STRINGS['CREATE_NEW_STATE']
                 actions = [new_session_action, 'Rename', 'Delete', "Duplicate", "View JSON"]
@@ -361,11 +361,11 @@ class SideBarStateMgr:
                 def on_action_select(selected_action=None):
                     """ Handle action selection by setting the selected action on the key """
                     # Take the selected action from the select if not provided
-                    if None == selected_action:
+                    if None is selected_action:
                         selected_action = st.session_state.get('sbsm_action_selector')
                     if selected_action in actions:
                         st.session_state['sbsm_selected_action'] = selected_action
-        
+
                 def render_actions_select(actions):
                     """ Show a drop down. Always set to first item. Callback on select. """
                     st.session_state['sbsm_action_selector'] = None
@@ -401,7 +401,7 @@ class SideBarStateMgr:
                     # Handle New
                     if selected_action == new_session_action:
                         do_action_create_new_state()
-                        
+
                     # Handle Rename
                     elif  selected_action == "Rename":
                         do_action_rename()
@@ -411,15 +411,15 @@ class SideBarStateMgr:
                         do_action_duplicate()
 
                     # Handle Delete
-                    elif selected_action == "Delete": 
+                    elif selected_action == "Delete":
                         do_action_delete()
-                    
+
                     # Handle Delete
-                    elif selected_action == "View JSON": 
+                    elif selected_action == "View JSON":
                         do_action_view_json()
 
-                        
-            # Render the main nav 
+
+            # Render the main nav
             self.setup_state_option_menu(saved_states, on_state_select)
 
             # Show status message at the bottom of the sidebar
@@ -430,10 +430,10 @@ class SideBarStateMgr:
         # Default current state if not set
         if not st.session_state.sbsm_current_state:
             st.session_state.sbsm_current_state = SideBarStateMgr.STRINGS['DEFAULT_STATE']
-        
+
         # Save it
         SideBarStateMgr.save_state(st.session_state.sbsm_current_state, self.key_storage_map)
-        
+
     def load_session_from_state(self, state_to_load):
         """ (re) load from the state into the current sesson """
 
@@ -445,14 +445,14 @@ class SideBarStateMgr:
     def get_current_state_name(self, default=''):
         return st.session_state.get('sbsm_current_state', default)
 
-    def __init__(self, key_storage_map):  
+    def __init__(self, key_storage_map):
         self.key_storage_map = key_storage_map
 
         # Handle state loading at the beginning of the script
         if 'sbsm_state_to_load' in st.session_state:
             self.load_session_from_state(st.session_state.sbsm_state_to_load)
             del st.session_state.sbsm_state_to_load
-        
+
         if 'sbsm_current_state' not in st.session_state:
             st.session_state.sbsm_current_state = None
 
@@ -463,21 +463,21 @@ class SideBarStateMgr:
         self.setup_sidebar()
 
 def main():
-    
+
     # Wide is best
     st.set_page_config(layout="wide")
-    
+
     # Setup state manager - specify state keys to persist
     key_storage_map = { "persistant" : ['p_*'], "volatile" : ['v_*'] }
     state_manager = SideBarStateMgr(key_storage_map)
 
     st.title("Example App To Demo State Manager")
-        
+
     # Different storage types
     st.text_input("Persistant Text:", key='p_text')
     st.text_input("Volatile Text:", key='v_text')
     st.text_input("Normal Text:", key='text')
-    
+
     # Display current state name
     current_state_name = state_manager.get_current_state_name()
     st.write(f"Current State: {current_state_name}")

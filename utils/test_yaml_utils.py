@@ -1,4 +1,4 @@
-# pylint: disable=C0116
+# pylint: disable=missing-function-docstring, missing-module-docstring, missing-class-docstring, protected-access
 import os
 import tempfile
 import shutil
@@ -193,7 +193,7 @@ class TestYAMLKeyResolver(unittest.TestCase):
         }
 
         with self.assertRaises(ValueError):
-            resolved = self.resolver.resolve(data)
+            self.resolver.resolve(data)
 
 
     def test_circular_reference(self):
@@ -216,7 +216,7 @@ class TestYAMLKeyResolver(unittest.TestCase):
             }
         }
         with self.assertRaises(ValueError):
-            resolved = resolver.resolve(data)
+            resolver.resolve(data)
 
 
 class TestYAMLUtils(unittest.TestCase):

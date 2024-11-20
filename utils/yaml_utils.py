@@ -150,9 +150,9 @@ class YAMLKeyResolver:
         if isinstance(obj, list):
             # Recursively resolve each item in the list
             return [self._resolve_recursive(item, data) for item in obj]
-        else:
-            # For primitive types, return as is
-            return obj
+
+        # For primitive types, return as is
+        return obj
 
 
     def resolve(self, data):

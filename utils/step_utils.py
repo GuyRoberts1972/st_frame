@@ -1,22 +1,21 @@
 """ Class hierarchy for flow steps """
-import streamlit as st
 from enum import IntEnum, Enum, auto
 from abc import ABC, abstractmethod
 from typing import Dict, Any
 import time
 import re
+import streamlit as st
+from st_ui.json_viewer import JSONViewer
 from utils.langchain_utils import LangChainUtils
-from utils.get_text import TxtGetter as TxtGetter
+from utils.get_text import TxtGetter
 from utils.flow_utils import FlowUtils
 
 class StepConfigException(Exception):
-    """ exception class for parsing errors """
-    pass
-
+    """ exception class for flow config parsing errors """
 
 # Forward def for type hint
 class BaseFlowApp:
-    pass
+    """ Forward declaration for the base flow app class """
 
 class BaseFlowStep_ack_mgmb(ABC):
     """ Abstract class to manaage acknowleggment status
@@ -24,25 +23,23 @@ class BaseFlowStep_ack_mgmb(ABC):
     """
 
     @abstractmethod
-    def format_internal_key(**kwargs):
+    def format_internal_key(self, pdata : bool, *args):
         """ Abstract method implemented by implementation """
-        pass
 
     @abstractmethod
-    def get_option(**kwargs):
+    def get_option(self, option_name, default=None):
         """ Abstract method implemented by implementation """
-        pass
 
     def _validate_ack(self, ack):
         """ check its a valid acknowledgement type """
         if not ack in ['changes', 'start']:
-            raise Exception(f"bad acknowledgment type '{ack}'")
+            raise StepConfigException(f"bad acknowledgment type '{ack}'")
 
     def get_ack_key(self, ack):
-            """ Return False if acknowlegement is required but has not yet been recieved """
-            self._validate_ack(ack)
-            ack_key = self.format_internal_key(True, ack, 'acknowledgement')
-            return ack_key
+        """ Return False if acknowlegement is required but has not yet been recieved """
+        self._validate_ack(ack)
+        ack_key = self.format_internal_key(True, ack, 'acknowledgement')
+        return ack_key
 
     def get_ack_status_description_text(self, ack):
         """ Get the descripton text to display for the ack,
@@ -80,7 +77,7 @@ class BaseFlowStep_ack_mgmb(ABC):
         if not opt_ack_value:
             return True
         ack_key = self.get_ack_key(ack)
-        if True == st.session_state.get(ack_key):
+        if True is st.session_state.get(ack_key):
             return True
         return False
 
@@ -90,24 +87,19 @@ class BaseFlowStep_ack_mgmb(ABC):
         ack_key = self.get_ack_key(ack)
         st.session_state[ack_key] = True
 
-class BaseFlowStep_key_mgmt(ABC):
+class BaseFlowStepKeyMgmt(ABC):
     """ Abstract class to Manage and format keys for a step """
 
     @abstractmethod
     def get_name(self):
         """ Abstract method to get the name of the step """
-        pass
 
+    @abstractmethod
     def get_unique_key_prefix(self, pdata=True):
         """ Get the prefix for all this steps keys , pdata true for persitable else volatile """
 
-        prefix = self.pdata_prefix
-        if not pdata:
-            prefix = self.vdata_prefix
-
-        return f'{prefix}{self.get_name()}'
-
     def get_output_key(self):
+        """ Get the unique output key for this step where all the steps output is stored """
         unique_key_prefix = self.get_unique_key_prefix()
         return f'{unique_key_prefix}_output_key'
 
@@ -181,6 +173,7 @@ class StepStatus(IntEnum):
         }
         return descriptions.get(self, "No description available")
 
+    @staticmethod
     def get_icon(status):
         """ Maps a StepStatus Unicode icon."""
         icon_map = {
@@ -213,14 +206,29 @@ class StatusCriteria(Enum):
         """ returns true if the status matches the criteria """
         try:
             enum_criteria = StatusCriteria(opt_criteria)
-        except ValueError:
+        except ValueError as exc:
             valid_options = ", ".join([criteria.value for criteria in StatusCriteria])
-            raise StepConfigException(f"Unknown option '{opt_criteria}'. Valid options are: {valid_options}")
+            err_msg = f"Unknown option '{opt_criteria}'. Valid options are: {valid_options}"
+            raise StepConfigException(err_msg) from exc
 
         criteria_map = {
-            StatusCriteria.afterActive: {StepStatus.ACTIVE_ACK_START, StepStatus.ACTIVE, StepStatus.ACTIVE_ACK_CHANGES, StepStatus.DONE},
-            StatusCriteria.anyActive: {StepStatus.ACTIVE_ACK_START, StepStatus.ACTIVE, StepStatus.ACTIVE_ACK_CHANGES},
-            StatusCriteria.waitingEnqueuedAndAckOnly: {StepStatus.WAITING, StepStatus.ENQUEUED, StepStatus.ACTIVE_ACK_CHANGES, StepStatus.ACTIVE_ACK_START},
+            StatusCriteria.afterActive: {
+                StepStatus.ACTIVE_ACK_START,
+                StepStatus.ACTIVE,
+                StepStatus.ACTIVE_ACK_CHANGES,
+                StepStatus.DONE
+                },
+            StatusCriteria.anyActive: {
+                StepStatus.ACTIVE_ACK_START,
+                StepStatus.ACTIVE,
+                StepStatus.ACTIVE_ACK_CHANGES
+                },
+            StatusCriteria.waitingEnqueuedAndAckOnly: {
+                StepStatus.WAITING,
+                StepStatus.ENQUEUED,
+                StepStatus.ACTIVE_ACK_CHANGES,
+                StepStatus.ACTIVE_ACK_START
+                },
             StatusCriteria.always: set(StepStatus),
             StatusCriteria.never: set(),
             StatusCriteria.waitingOnly: {StepStatus.WAITING},
@@ -233,7 +241,7 @@ class StatusCriteria(Enum):
 
         return step_status in criteria_map[enum_criteria]
 
-class BaseFlowStep(BaseFlowStep_key_mgmt, BaseFlowStep_ack_mgmb):
+class BaseFlowStep(BaseFlowStepKeyMgmt, BaseFlowStep_ack_mgmb):
     """ Common data and functions for flow steps """
 
     def __init__(self, name, app, defaults):
@@ -251,6 +259,15 @@ class BaseFlowStep(BaseFlowStep_key_mgmt, BaseFlowStep_ack_mgmb):
         # Constants
         self.pdata_prefix = 'pdata_'
         self.vdata_prefix = 'vdata_'
+
+    def get_unique_key_prefix(self, pdata=True):
+        """ Get the prefix for all this steps keys , pdata true for persitable else volatile """
+
+        prefix = self.pdata_prefix
+        if not pdata:
+            prefix = self.vdata_prefix
+
+        return f'{prefix}{self.get_name()}'
 
     def get_option(self, option_name, default=None):
         """ Get a step option, precedence order if step level config, then flow config """
@@ -340,11 +357,11 @@ class BaseFlowStep(BaseFlowStep_key_mgmt, BaseFlowStep_ack_mgmb):
             return action
 
         # Action buttons
-        act_reset = get_button('reset', lambda : self.on_reset())
-        act_reset_to_prev = get_button('reset_to_prev', lambda : self.on_reset_to_prev_step())
-        act_reset_from_here = get_button('reset_from_here', lambda : self.on_reset_from_here())
-        act_reset_all = get_button('reset_all', lambda : self.on_reset_all())
-        act_view_JSON = get_button('view_json', lambda : self.on_view_JSON())
+        act_reset = get_button('reset', self.on_reset)
+        act_reset_to_prev = get_button('reset_to_prev', self.on_reset_to_prev_step)
+        act_reset_from_here = get_button('reset_from_here', self.on_reset_from_here)
+        act_reset_all = get_button('reset_all', self.on_reset_all)
+        act_view_json = get_button('view_json', self.on_view_json)
 
         def fn_step_content():
             ''' Render the contents of the step, return available actions'''
@@ -368,7 +385,7 @@ class BaseFlowStep(BaseFlowStep_key_mgmt, BaseFlowStep_ack_mgmb):
                 self.do(step_config, step_state, step_status)
                 # Actions
                 actions = [act_reset, act_reset_to_prev, act_reset_all]
-                actions = actions + [act_view_JSON]
+                actions = actions + [act_view_json]
             elif step_status == StepStatus.ACTIVE_ACK_CHANGES:
                 # Do it
                 self.do(step_config, step_state, step_status)
@@ -380,7 +397,7 @@ class BaseFlowStep(BaseFlowStep_key_mgmt, BaseFlowStep_ack_mgmb):
                 self.do(step_config, step_state, step_status)
                 # Actions
                 actions = [act_reset, act_reset_to_prev, act_reset_from_here, act_reset_all]
-                actions = actions + [act_view_JSON]
+                actions = actions + [act_view_json]
             else:
                 st.warning('This step is an unknown state')
 
@@ -405,6 +422,7 @@ class BaseFlowStep(BaseFlowStep_key_mgmt, BaseFlowStep_ack_mgmb):
 
     def get_name(self):
         return self.name
+
 
     def get_heading(self):
         return self.heading
@@ -441,7 +459,7 @@ class BaseFlowStep(BaseFlowStep_key_mgmt, BaseFlowStep_ack_mgmb):
         """ Clear this step's state and all the subsequent steps in the flow """
 
         cur_step = self
-        while cur_step != None:
+        while cur_step is not None:
             cur_step.on_reset(reset_output_key, reset_internal_keys)
             cur_step = cur_step.get_next_step()
 
@@ -451,7 +469,7 @@ class BaseFlowStep(BaseFlowStep_key_mgmt, BaseFlowStep_ack_mgmb):
         self.on_reset(reset_output_key, reset_internal_keys)
         self.get_prev_step().on_reset(reset_output_key, reset_internal_keys)
 
-    def on_view_JSON(self):
+    def on_view_json(self):
         """ View this steps json """
 
         # Gather all the steps keys into a dict
@@ -465,10 +483,9 @@ class BaseFlowStep(BaseFlowStep_key_mgmt, BaseFlowStep_ack_mgmb):
         # Internal keys
         internal_keys = self.get_internal_keys(include_pdata=True, include_vdata=True)
         for key in internal_keys:
-                key_dict[key] = st.session_state[key]
+            key_dict[key] = st.session_state[key]
 
         # Show
-        from st_ui.json_viewer import JSONViewer
         JSONViewer.view_json(key_dict)
 
 
@@ -479,9 +496,9 @@ class BaseFlowStep(BaseFlowStep_key_mgmt, BaseFlowStep_ack_mgmb):
         """ Get the depends on dict or key value if key specified """
 
         # Return the dict if key not specified
-        if dependency == None:
+        if dependency is None:
             dependency_dict = self.step_config.get('depends_on', None)
-            if dependency_dict == None:
+            if dependency_dict is None:
                 dependency_dict = {}
 
             # Done - return the dict
@@ -565,7 +582,7 @@ class BaseFlowStep(BaseFlowStep_key_mgmt, BaseFlowStep_ack_mgmb):
     def get_prev_step_heading(self, default='No Previous Step'):
         """ Get the heading of the previous step - or return default"""
         prev_step = self.get_prev_step()
-        if None == prev_step:
+        if None is prev_step:
             return default
         return prev_step.get_heading()
 
@@ -574,7 +591,7 @@ class BaseFlowStep(BaseFlowStep_key_mgmt, BaseFlowStep_ack_mgmb):
         A step is done if output is ready and any confirmation ack is recieved
         '''
         prev_step = self.get_prev_step()
-        if None == prev_step:
+        if None is prev_step:
             return True
         if not prev_step.output_data_ready(flow_state):
             return False
@@ -583,7 +600,7 @@ class BaseFlowStep(BaseFlowStep_key_mgmt, BaseFlowStep_ack_mgmb):
     def output_data_ready(self, flow_state):
         ''' returns true of the output keys exist with data '''
         output_key = self.get_output_key()
-        if None == flow_state.get(output_key):
+        if None is flow_state.get(output_key):
             return False
         return True
 
@@ -598,14 +615,19 @@ class BaseFlowStep(BaseFlowStep_key_mgmt, BaseFlowStep_ack_mgmb):
 
         return True
 
+    @abstractmethod
+    def do(self, step_config, state_dict, step_status):
+        """ Derived classes implement to do the steps work """
+
+
     @staticmethod
     def create_instance(class_name, **kwargs):
         """ Factory function - Create an instance of the specified class """
 
         try:
             cls = globals()[class_name]
-        except KeyError:
-            raise ValueError(f"Class '{class_name}' not found")
+        except KeyError as exc:
+            raise ValueError(f"Class '{class_name}' not found") from exc
 
         # Check if it's a subclass of BaseClass
         if not issubclass(cls, BaseFlowStep):
@@ -633,7 +655,7 @@ class ChooseLLMFlavour(BaseFlowStep):
         )
 
 
-    def do(self, step_config, state_dict, step_status):
+    def do(self, _step_config, state_dict, step_status):
         """ Show the LLM flavours and allow the user to select """
 
         # Disable widgets if done
@@ -644,7 +666,7 @@ class ChooseLLMFlavour(BaseFlowStep):
         chat_model_choices_list = list(LangChainUtils.get_chat_model_choices().keys())
 
         # Handle None pkey - default to first choice
-        if None == state_dict.get(pkey):
+        if None is state_dict.get(pkey):
             state_dict[pkey] = chat_model_choices_list[0]
 
         # Show selector
@@ -685,6 +707,18 @@ class DefineInputDataStep(BaseFlowStep):
         # Disable widgets if done
         disabled = (step_status == StepStatus.DONE)
 
+        # Types of input supported by create_input_widget
+        INPUT_TYPES = {
+                'url': ('text_input', 'from_url'),
+                'urls': ('text_area', 'from_urls'),
+                'jira_issue': ('text_input', 'from_jira_issue'),
+                'jira_issues': ('text_input', 'from_jira_issues'),
+                'jira_jql_query': ('text_input', 'from_jql_query'),
+                'confluence_page': ('text_input', 'from_confluence_page'),
+                'confluence_pages': ('text_area', 'from_confluence_pages'),
+                'free_form_text': ('text_area', 'from_multiline_text'),
+            }
+
         # Loop through input items
         all_defined = True
         for item_key, item_def in data_defs.items():
@@ -703,27 +737,20 @@ class DefineInputDataStep(BaseFlowStep):
             # Default value if present
             default_value = item_def.get('default_value')
 
-            # Types of input supported by create_input_widget
-            INPUT_TYPES = {
-                'url': ('text_input', 'from_url'),
-                'urls': ('text_area', 'from_urls'),
-                'jira_issue': ('text_input', 'from_jira_issue'),
-                'jira_issues': ('text_input', 'from_jira_issues'),
-                'jira_jql_query': ('text_input', 'from_jql_query'),
-                'confluence_page': ('text_input', 'from_confluence_page'),
-                'confluence_pages': ('text_area', 'from_confluence_pages'),
-                'free_form_text': ('text_area', 'from_multiline_text'),
-            }
-
-            def create_input_type(input_type: str, item_def: Dict[str, Any], pkey: str, default_value: Any, disabled: bool) -> Any:
+            def create_input_type(
+                    input_type: str,
+                    item_def: Dict[str, Any],
+                    pkey: str,
+                    default_value: Any,
+                    disabled: bool) -> Any:
                 """ Handle common text_input and text_area input types """
                 widget_type, getter_method = INPUT_TYPES.get(input_type, (None, None))
                 if widget_type is None:
                     raise StepConfigException(f"Unknown input type '{input_type}'")
 
                 # Set the default value. Using the 'value' param for text_areas seems unreliable
-                if None == state_dict.get(pkey):
-                        state_dict[pkey] = default_value
+                if None is state_dict.get(pkey):
+                    state_dict[pkey] = default_value
 
                 if widget_type == 'text_input':
                     widget = st.text_input(item_def["description"], key=pkey, disabled=disabled)
@@ -744,7 +771,7 @@ class DefineInputDataStep(BaseFlowStep):
             elif input_type == 'uploaded_files':
                 # Handle file upload differently
                 file_types = ['pdf', 'docx', 'pptx', 'txt', 'xls', 'xlsx', 'csv']
-                if None == state_dict.get(vkey):
+                if None is state_dict.get(vkey):
                     temp_unique_key = vkey + str(int(time.time() * 1000000))
                     state_dict[vkey] = temp_unique_key
                 else:
@@ -828,7 +855,7 @@ class RetrieveDataStep(BaseFlowStep):
             state_dict[self.internal_log_key].append(log_item)
 
         output_key = self.get_output_key()
-        if None == state_dict.get(output_key):
+        if None is state_dict.get(output_key):
             state_dict[output_key] = {}
             state_dict[self.internal_log_key] = []
             with st.spinner("Getting data..."):
@@ -888,7 +915,7 @@ class SelectPromptFragmentsStep(BaseFlowStep):
 
         # Create output key
         output_key = self.get_output_key()
-        if None == state_dict.get(output_key):
+        if None is state_dict.get(output_key):
             state_dict[output_key] = {}
 
         # Loop through options
@@ -901,7 +928,7 @@ class SelectPromptFragmentsStep(BaseFlowStep):
 
             # Handle None pkey by setting as first choice
             choices_list = list(choices.keys())
-            if None == state_dict.get(pkey):
+            if None is state_dict.get(pkey):
                 state_dict[pkey] = choices_list[0]
 
             # Display and get the choice
@@ -1012,7 +1039,7 @@ class ChatLoopStep(BaseFlowStep):
             """ Run the loop - return true if a new interation occurs """
 
             # Init the messages key in state for history storage
-            if state_dict.get(messages_key) == None:
+            if state_dict.get(messages_key) is None:
                 state_dict[messages_key] = []
 
             # Short cut
@@ -1032,10 +1059,10 @@ class ChatLoopStep(BaseFlowStep):
             human_prompt = st.chat_input(placeholder=input_place_holder_text)
 
             # First time through use the initial prompt
-            if len(messages) == 0 and initial_human_prompt != None:
+            if len(messages) == 0 and initial_human_prompt is not None:
                 human_prompt = initial_human_prompt
 
-            # Assume no interacction
+            # Assume no interaction
             interaction_occured = False
 
             # Submit to the model
