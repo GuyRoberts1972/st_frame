@@ -1,10 +1,9 @@
+# pylint: disable=C0116
 import unittest
 from get_text import TxtGetter, TxtGetterHelpers
 
-
-
 class TestTxtGetterHelpers(unittest.TestCase):
-    
+
     def test_get_nested_values(self):
         data = {"a": 1}
         self.assertEqual(TxtGetterHelpers.get_nested_value(data, "a"), 1)

@@ -1,3 +1,4 @@
+# pylint: disable=C0116
 import os
 import tempfile
 import shutil
@@ -5,7 +6,7 @@ import unittest
 from yaml_utils import YamlUtils, RefResolver
 
 class TestMergeNested(unittest.TestCase):
-    
+
 
     def test_merge_nested_dicts(self):
         target = { "k1" : "v1"}
@@ -17,7 +18,7 @@ class TestMergeNested(unittest.TestCase):
         source = { "k1" : "v1"}
         target = RefResolver._merge_nested(target, source)
         self.assertEqual(target, { "k1" : "v1", "k2" : "v2"})
-        
+
         source = { "k1" : "v1"}
         target = { "k1" : "v1", "k2" : "v2"}
         target = RefResolver._merge_nested(target, source)
@@ -130,7 +131,7 @@ class TestRefResolver(unittest.TestCase):
         self.assertDictEqual(resolved['animal'], expected)
 
     def test_nested(self):
-    
+
         data = {
             "templates": {
                 "bodyparts": {

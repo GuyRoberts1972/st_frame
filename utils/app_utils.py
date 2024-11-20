@@ -1,8 +1,9 @@
 """ Base class for flow apps """
 import streamlit as st
-from utils.get_text import TxtGetter as TxtGetter
-from utils.step_utils import BaseFlowStep, StepConfigException, StepStatus
 from typing import Dict, Any
+from utils.get_text import TxtGetter as TxtGetter
+from st_ui.step_list import StepContainer
+from utils.step_utils import BaseFlowStep, StepConfigException, StepStatus
 
 
 class BaseFlowApp:
@@ -11,7 +12,7 @@ class BaseFlowApp:
         """ Initialise and display title etc """
 
         self._validate_config(config)
-        
+
         # Init variables
         self.state_manager = state_manager
         self.config = config
@@ -19,7 +20,7 @@ class BaseFlowApp:
 
         # Title and description
         st.title(config['title'])
-        st.write(config['description']) 
+        st.write(config['description'])
 
     @staticmethod
     def _validate_config(config: Dict[str, Any]) -> None:
@@ -27,19 +28,19 @@ class BaseFlowApp:
         for key in required_keys:
             if key not in config:
                 raise ValueError(f"Missing required key in config: {key}")
-    
+
     def get_step_config(self, step_name):
         """ Get the step section of config """
         return self.config['steps'][step_name]
-    
+
     def get_config(self):
         """ Get the config """
         return self.config
-    
+
     def get_state(self):
         """ Get the state (pseudo) dict """
         return st.session_state
-    
+
     def set_state(self, key, value):
         """ Set the key to the value """
         st.session_state[key] = value
@@ -51,39 +52,39 @@ class BaseFlowApp:
     def get_step(self, step_name):
          """ Get the step by name """
          return self.steps[step_name]
-    
+
     def get_step_names(self):
         """ Get the step name as a list """
         step_names = list(self.steps.keys())
         return step_names
-    
+
     def get_prev_step(self, step_name):
         """ Get the step previous to the named one - or None """
         step_names = self.get_step_names()
-        cur_index = step_names.index(step_name) 
+        cur_index = step_names.index(step_name)
         if cur_index == 0:
             return None
         prev_step_name = step_names[cur_index - 1]
         return self.steps[prev_step_name]
-    
+
     def get_next_step(self, step_name):
         """ Get the step after to the named one - or None """
         step_names = self.get_step_names()
-        cur_index = step_names.index(step_name) 
+        cur_index = step_names.index(step_name)
         if cur_index >= len(step_names) -1:
             return None
         next_step_name = step_names[cur_index + 1]
         return self.steps[next_step_name]
-    
+
     def add_step(self, step : BaseFlowStep):
-        """ Add a step, check its not a dupe and check 
+        """ Add a step, check its not a dupe and check
         it's dependents steps are all ready present """
-        
+
         # Check for duplicate
         step_name = step.get_name()
         if step_name in self.steps:
             raise StepConfigException(f"Problem loading step '{step_name}'. A step with that name already exists.")
-        
+
         # Check input dependencies
         steps_config = self.config['steps']
         depends_on = step.get_depends_on()
@@ -94,7 +95,7 @@ class BaseFlowApp:
             # Check the step exists
             if dep_step_name not in steps_config.keys():
                 raise StepConfigException(f"Problem loading step '{step_name}'. Dependency step '{dep_step_name}' referenced by depedency '{dependency_name}' was not found")
-        
+
             # If they key is a sub key on the step, check the step supports it
             subkey_path = step.subkey_from_path(dependency_path, dep_step_name)
             if len(subkey_path) > 0:
@@ -110,7 +111,7 @@ class BaseFlowApp:
         self.steps[step_name] = step
 
     def load_steps(self):
-        
+
         # Enum steps and add them
         for step_name, step_config in self.config['steps'].items():
 
@@ -127,23 +128,23 @@ class BaseFlowApp:
                     app=self,
                 )
             )
- 
+
     def show_steps(self):
         """ Show the steps in the UI """
 
-        from st_ui.step_list import StepContainer
+
         # Loop through steps
         step_container = StepContainer()
         flow_state = self.get_state()
-            
+
         def render_step(step : BaseFlowStep, hide, expand, step_status, fn_step_content):
             """ Render the entire step including the container """
-            
+
             def fn_step_content_wrapper():
                 """ Render the step content and turn actions into buttons definitions """
                 actions = fn_step_content()
                 step_name = step.get_name()
-                
+
                 # Convert actions to buttons
                 buttons = []
                 for action in actions:
@@ -153,20 +154,20 @@ class BaseFlowApp:
                         buttons.append(button)
                     else:
                         pass
-                
+
                 # Done
                 return buttons
 
             # Visually show step state on header
             status_name = StepStatus.get_name(step_status)
             step_headng = f"{status_name} {step.heading}"
-                        
+
             # Render the step in the container
             step_container.render_step(step_headng, fn_step_content_wrapper, expand, hide)
 
         # Show each of the steps
         for _, step in self.steps.items():
             step.show(flow_state, render_step)
-                
+
         # Save state
         self.state_manager.save_session_to_state()
