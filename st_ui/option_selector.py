@@ -17,8 +17,8 @@ class OptionSelector:
         "DISABLED_OPTION": "{option} (Coming Soon)"
     }
 
-    def __init__(self, 
-                 options: Dict[str, Dict[str, Any]], 
+    def __init__(self,
+                 options: Dict[str, Dict[str, Any]],
                  get_sub_options: Callable[[str], Dict[str, Dict[str, Any]]],
                  on_select: Callable[[str, str, Dict[str, Any]], None],
                  on_cancel: Callable[[], None]):
@@ -42,10 +42,10 @@ class OptionSelector:
             st.session_state.op_sel_selected_option = None
         if 'op_sel_selected_option_key' not in st.session_state:
             st.session_state.op_sel_selected_option_key = None
-    
+
     def clear_state(self):
         """ Clear state - i.e. when done """
-        
+
         # Initialize session state
         if 'op_sel_selected_option' in st.session_state:
             del st.session_state.op_sel_selected_option
@@ -67,7 +67,7 @@ class OptionSelector:
         for i, (key, option) in enumerate(self.options.items()):
             with cols[i % 2]:
                 button_text = f"{option['icon']} **{option['title']}**\n\n{option['description']}"
-                if st.button(button_text,key=f"main_{key}"):   
+                if st.button(button_text,key=f"main_{key}"):
                     st.session_state.op_sel_selected_option = option
                     st.session_state.op_sel_selected_option_key = key
                     st.rerun()
@@ -78,38 +78,38 @@ class OptionSelector:
         st.write(f"You selected: {st.session_state.op_sel_selected_option['title']}")
         st.write(self.STRINGS["SUB_OPTION_PROMPT"])
         sub_options = self.get_sub_options(st.session_state.op_sel_selected_option_key)
-        
+
         # Create a list of option names, disabling those that are not enabled
         option_keys = list(sub_options.keys())
         option_names = [
-            self.STRINGS["DISABLED_OPTION"].format(option=sub_options[key]['title']) 
+            self.STRINGS["DISABLED_OPTION"].format(option=sub_options[key]['title'])
             if not sub_options[key]['enabled'] else sub_options[key]['title']
             for key in option_keys
         ]
-        
+
         def format_func(i):
             return option_names[i]
-        
+
         selected_index = st.radio(
             "Sub-options",
             range(len(option_names)),
             format_func=format_func
         )
-        
+
         selected_key = option_keys[selected_index]
         selected_sub_option = sub_options[selected_key]
-        
+
         st.write(f"Description: {selected_sub_option['description']}")
-        
+
         col1, col2 = st.columns(2)
         with col1:
             if st.button(self.STRINGS["ACTION_CONFIRM_BUTTON"], disabled=not selected_sub_option['enabled']):
                 self.on_select(st.session_state.op_sel_selected_option_key, selected_key, selected_sub_option)
                 st.success(self.STRINGS["SUCCESS_MESSAGE"].format(
-                    sub_option=selected_sub_option['title'], 
+                    sub_option=selected_sub_option['title'],
                     main_option=st.session_state.op_sel_selected_option['title']
                 ))
-        
+
         with col2:
             if st.button(self.STRINGS["BACK_BUTTON"]):
                 st.session_state.op_sel_selected_option = None

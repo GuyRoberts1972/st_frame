@@ -1,36 +1,35 @@
 "Retrievers to get LLM ready text from different sources"
+import os
+import logging
+import re
+import json
+from urllib.parse import urlparse, parse_qs, urljoin
+from datetime import datetime
+import textwrap
+import csv
 import requests
 from bs4 import BeautifulSoup
 import PyPDF2
 import docx
-import csv
-from urllib.parse import urlparse, parse_qs, urljoin
 from atlassian import Confluence
 from pptx import Presentation
 import pandas as pd
-import os
-from datetime import datetime
-import requests
 from requests.auth import HTTPBasicAuth
 import streamlit as st
-import re
-import json
-import textwrap
 
 class TxtGetterHelpers:
     """ helpers """
 
     @staticmethod
     def split_string(input_string):
-        # Use regular expression to split the string
-        # \s+ matches one or more whitespace characters
-        # ,\s* matches a comma followed by zero or more whitespace characters
+        """ Split a string on white space or commas"""
         parts = re.split(r'[,\s]+', input_string.strip())
         parts = [item for item in parts if item != ""]
         return parts
 
     @staticmethod
     def get_nested_value(obj, path, default="N/A"):
+        """ get a value from a nested dict using dot notation """
         keys = path.split('.')
         for key in keys:
             if obj is None:
@@ -41,30 +40,43 @@ class TxtGetterHelpers:
                 return default
         return obj if obj is not None else default
 
+    @staticmethod
+    def get_extractor_map():
+        """ Get the mapping of mime types to extractor methods """
 
+        # Map mime type to method
+        extractor_map = {
+            "application/pdf":
+                TxtGetter.from_pdf,
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
+                TxtGetter.from_docx,
+            "application/vnd.openxmlformats-officedocument.presentationml.presentation":
+                TxtGetter.from_pptx,
+            "text/plain":
+                TxtGetter.from_txt,
+            "application/vnd.ms-excel":
+                TxtGetter.from_xls,
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet":
+                TxtGetter.from_xls,
+            "text/csv":
+                TxtGetter.from_csv
+        }
 
+        # Done
+        return extractor_map
 
 
 class TxtGetter:
     """ Class to expose methods to extract and format text from sources in an LLM ready way """
 
-    EXTRACTORS = {
-        "application/pdf": lambda file: TxtGetter.from_pdf(file),
-        "application/vnd.openxmlformats-officedocument.wordprocessingml.document": lambda file: TxtGetter.from_docx(file),
-        "application/vnd.openxmlformats-officedocument.presentationml.presentation": lambda file: TxtGetter.from_pptx(file),
-        "text/plain": lambda file: TxtGetter.from_txt(file),
-        "application/vnd.ms-excel": lambda file: TxtGetter.from_xls(file),
-        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": lambda file: TxtGetter.from_xls(file),
-        "text/csv": lambda file: TxtGetter.from_csv(file)
-    }
-
-
     @staticmethod
     def from_multiline_text(text):
+        """ from text - nop """
         return text
 
     @staticmethod
     def from_pdf(file):
+        """ from an adobe pdf file """
         pdf_reader = PyPDF2.PdfReader(file)
         text = ""
         for page in pdf_reader.pages:
@@ -73,6 +85,7 @@ class TxtGetter:
 
     @staticmethod
     def from_docx(file):
+        """ from a woord doc file """
         doc = docx.Document(file)
         text = ""
         for para in doc.paragraphs:
@@ -81,12 +94,13 @@ class TxtGetter:
 
     @staticmethod
     def from_pptx(file):
+        """ from a power point file """
         prs = Presentation(file)
         text = ""
 
 
         def shape_has_table(shape):
-            ''' Return true of the shape has a table '''
+            ''' Return true if the shape has a table '''
             try:
                 # No attribute no table
                 if not hasattr(shape, 'table'):
@@ -94,7 +108,7 @@ class TxtGetter:
                 # Try and enumerate - will throw exception if no table
                 for _i, _row in enumerate(shape.table.rows, 1):
                     pass
-            except Exception as e:
+            except Exception as _e:
                 return False
 
         def extract_text_from_shape(shape, indent_level=0):
@@ -146,11 +160,13 @@ class TxtGetter:
 
     @staticmethod
     def from_xls(file_path):
+        """ from a excel file """
         df = pd.read_excel(file_path)
         return df.to_string()
 
     @staticmethod
     def from_csv(file_path):
+        """ from a comma seperated value file """
         text = ""
         with open(file_path, 'r', encoding='utf-8') as file:
             csv_reader = csv.reader(file)
@@ -185,7 +201,8 @@ class TxtGetter:
             file_name = uploaded_file['name']
             file_path = uploaded_file['path']
 
-            extractor = TxtGetter.EXTRACTORS.get(file_type)
+            extractor_map = TxtGetterHelpers.get_extractor_map()
+            extractor = extractor_map.get(file_type)
             if not extractor:
                 raise ValueError(f"Unsupported file format: {file_type}")
 
@@ -243,7 +260,7 @@ class TxtGetter:
             if not response.ok:
                 error_msg = response.reason
                 error_text = f"Could not get data for '{issue_key}' '{error_msg}'"
-                raise Exception(error_text)
+                raise ValueError(error_text)
 
         def get_issue_data(issue_key):
             url = f"{jira_url}{jira_api_endpoint}/issue/{issue_key}"
@@ -269,14 +286,16 @@ class TxtGetter:
             def process_content(content):
                 nonlocal formatted_text
                 for item in content:
-                    if item['type'] == 'paragraph':
-                        processed_content = process_content(item['content'])
-                        if processed_content is not None:
-                            formatted_text += processed_content + "\n\n"
-                    elif item['type'] == 'text':
+                    item_type = item.get('type')
+                    if item_type == 'paragraph':
+                        process_content(item['content'])
+                    elif item_type == 'text':
                         formatted_text += item['text']
-                    elif item['type'] == 'hardBreak':
+                    elif item_type == 'hardBreak':
                         formatted_text += "\n"
+                    else:
+                        log_msg = f"unknown item type '{item_type}' in issue '{issue_key}'"
+                        logging.warning(log_msg)
 
             if description and 'content' in description:
                 process_content(description['content'])
@@ -352,6 +371,8 @@ class TxtGetter:
 
     @staticmethod
     def from_jql_query(jql_query, page_size=50, max_results=100):
+        """ Get text from the results of a JQL query """
+
         # Get secrets
         secrets = dict(st.secrets['atlassian'])
 
@@ -359,7 +380,7 @@ class TxtGetter:
             if not response.ok:
                 error_msg = response.reason
                 error_text = f"Error executing JQL query: {error_msg}"
-                raise Exception(error_text)
+                raise ValueError(error_text)
 
         def get_issues_data(jql, start_at=0, max_results=50):
             url = f"{secrets['jira_url']}{secrets['jira_api_endpoint']}/search"
@@ -390,14 +411,16 @@ class TxtGetter:
             def process_content(content):
                 nonlocal formatted_text
                 for item in content:
-                    if item['type'] == 'paragraph':
-                        processed_content = process_content(item['content'])
-                        if processed_content is not None:
-                            formatted_text += processed_content + "\n\n"
-                    elif item['type'] == 'text':
+                    item_type = item.get('type')
+                    if item_type == 'paragraph':
+                        process_content(item['content'])
+                    elif item_type == 'text':
                         formatted_text += item['text']
-                    elif item['type'] == 'hardBreak':
+                    elif item_type == 'hardBreak':
                         formatted_text += "\n"
+                    else:
+                        log_msg = f"unknown item type '{item_type}' in JQL result '{jql_query}'"
+                        logging.warning(log_msg)
 
             if description and 'content' in description:
                 process_content(description['content'])
@@ -565,7 +588,9 @@ class TxtGetter:
         content = extractor.from_confluence_page(page_url_or_id)
         return content
 
+    @staticmethod
     def from_confluence_pages(page_urls_or_ids):
+        """ Get text from a list of confluence pages """
 
         page_list = TxtGetterHelpers.split_string(page_urls_or_ids)
         text = ''

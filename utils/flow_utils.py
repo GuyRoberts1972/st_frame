@@ -1,24 +1,18 @@
 
 """ Utility methods for flows """
-import streamlit as st
-from utils.langchain_utils import LangChainUtils
-import tempfile, os, hashlib, re
-from typing import List
+import tempfile
+import os
+import hashlib
+import re
 from urllib.parse import urlparse
+import streamlit as st
 from utils.get_text import TxtGetter
-
 
 class FlowUtils:
     """ Static utility methods for flows """
 
     ## Non UI helpers ###
-
-    def print_session_state_keys(title=None):
-        if title:
-            print(title)
-        for key in st.session_state.keys():
-            print(f"{key}")
-
+    @staticmethod
     def get_temp_dir():
         ''' create and get a temp dir for file storage'''
 
@@ -28,10 +22,12 @@ class FlowUtils:
             os.makedirs(temp_dir)
         return temp_dir
 
+    @staticmethod
     def calculate_sha256(file_content):
         """Calculate SHA256 hash of file content."""
         return hashlib.sha256(file_content).hexdigest()
 
+    @staticmethod
     def save_uploaded_file(uploaded_file):
         """Save uploaded file with SHA256 prefix."""
         file_content = uploaded_file.read()
@@ -50,6 +46,7 @@ class FlowUtils:
 
     @staticmethod
     def nested_get(data, keys, default=None):
+        """ Get a value from a dict using dotted syntax """
         for key in keys.split('.'):
             if isinstance(data, dict):
                 data = data.get(key, default)
@@ -61,6 +58,7 @@ class FlowUtils:
 
     @staticmethod
     def estimate_tokens(text):
+        """ Estimate the number of LLM tokens in the text """
         # Remove extra whitespace and split into words
         words = re.findall(r'\w+', text.lower())
 
@@ -71,6 +69,8 @@ class FlowUtils:
 
     @staticmethod
     def format_prompt(format_str, token_map, value_dict):
+        """ Format the string using a token map and a lookup dict """
+
         # Find all unique tokens in the original string
         original_tokens = set(re.findall(r'\{([^{}]+)\}', format_str))
 

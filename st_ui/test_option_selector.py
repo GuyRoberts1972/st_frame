@@ -1,8 +1,8 @@
-# pylint: disable=C0116
-import streamlit as st
+# pylint: disable=missing-function-docstring, missing-module-docstring, missing-class-docstring, protected-access
 import unittest
 from unittest.mock import patch, MagicMock
 from option_selector import OptionSelector
+import streamlit as st
 
 class TestOptionSelector(unittest.TestCase):
 
@@ -18,7 +18,11 @@ class TestOptionSelector(unittest.TestCase):
         }
         self.on_select = MagicMock()
         self.on_cancel = MagicMock()
-        self.selector = OptionSelector(self.options, self.get_sub_options, self.on_select, self.on_cancel)
+        self.selector = OptionSelector(
+            self.options,
+            self.get_sub_options,
+            self.on_select,
+            self.on_cancel)
 
     @patch('streamlit.button')
     @patch('streamlit.columns')

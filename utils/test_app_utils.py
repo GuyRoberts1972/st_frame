@@ -1,4 +1,4 @@
-# pylint: disable=C0116
+# pylint: disable=missing-function-docstring, missing-module-docstring, missing-class-docstring, protected-access
 import unittest
 import test_helper
 test_helper.setup_path()
@@ -97,7 +97,7 @@ class TestBaseFlowApp(unittest.TestCase):
 
     @patch.object(BaseFlowStep, 'input_data_ready')
     @patch.object(BaseFlowStep, 'show')
-    def test_show_steps(self, mock_show, mock_input_data_ready):
+    def test_show_steps(self, mock_input_data_ready):
         mock_step1 = MagicMock(spec=BaseFlowStep)
         mock_step2 = MagicMock(spec=BaseFlowStep)
         self.app.steps = {'step1': mock_step1, 'step2': mock_step2}

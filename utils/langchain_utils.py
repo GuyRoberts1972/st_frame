@@ -1,21 +1,18 @@
 """ Lang chain and LLM wrappers """
 import boto3
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
+from langchain_core.runnables import RunnableWithMessageHistory
 from langchain_core.messages import SystemMessage
 from langchain_aws import ChatBedrock
-from langchain.chains import ConversationChain
-from langchain.memory import ConversationBufferMemory
-from langchain.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_community.chat_message_histories import ChatMessageHistory
-from langchain_core.runnables import RunnableWithMessageHistory
 
 class LangChainUtils:
     ''' handles details about LLM models '''
 
     @staticmethod
     def get_chat_model_choices():
+        """ Get the stock model choices """
 
-        # todo: move these to data
         choices = {
             "Claude 3 Sonnet - Standard (Default)" : {
                 "description" : "Claude 3 Sonnet with standard settings",
@@ -49,12 +46,12 @@ class LangChainUtils:
 
     @staticmethod
     def get_chat_model(model_choice, region_name=None):
-        ''' get the model to use for chat based on the choice '''
+        """ get the model to use for chat based on the choice """
 
         # Get the values for the model choice
         chat_model_choices = LangChainUtils.get_chat_model_choices()
         if model_choice not in chat_model_choices:
-            raise Exception(f"Invalid model choice '{model_choice}")
+            raise ValueError(f"Invalid model choice '{model_choice}")
 
         model_choice = chat_model_choices[model_choice]
 

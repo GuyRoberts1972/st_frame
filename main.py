@@ -1,9 +1,13 @@
 """ The main application """
+import os
+import importlib.util
+import yaml
 import streamlit as st
 from st_ui.side_bar_state_mgr import SideBarStateMgr
-import yaml
-from utils.yaml_utils import YamlUtils
-import os
+from st_ui.option_selector import OptionSelector
+from st_ui.json_viewer import JSONViewer
+from utils.yaml_utils import YAMLUtils
+
 
 def load_yaml_file(file_path):
     """ Load the YAML with includes and ref resolution """
@@ -11,14 +15,16 @@ def load_yaml_file(file_path):
     base_dir = get_base_dir()
     include_lib_path = os.path.join(base_dir, st.secrets['paths']['templates_include_lib'])
     include_lib_path = os.path.normpath(include_lib_path)
-    data = YamlUtils.load_yaml(file_path, include_lib_path)
+    data = YAMLUtils.load_yaml(file_path, include_lib_path)
     return data
 
 def get_base_dir():
+    """ Get the base directory for the app"""
     base_dir = os.path.dirname(os.path.abspath(__file__))
     return base_dir
 
 def generate_groups(relative_path=""):
+    """ Generate the groups of templates for the user to start a session """
     options = {}
 
     base_dir = get_base_dir()
@@ -39,6 +45,7 @@ def generate_groups(relative_path=""):
     return options
 
 def get_group_templates(subfolder, relative_path=""):
+    """ Get the templates in the group """
     items = {}
     base_dir = get_base_dir()
     full_path = os.path.join(base_dir, relative_path, subfolder)
@@ -63,7 +70,6 @@ def get_group_templates(subfolder, relative_path=""):
 
 def load_and_run_static_method(relative_path, class_name, method_name, *args, **kwargs):
     """ load the class from the file and run the static method with the params """
-    import importlib.util
 
     # Get the directory of the current script
     base_dir = get_base_dir()
@@ -96,11 +102,8 @@ def handle_template_selection(template_folder):
     ''' show the use case selection if not selected '''
 
     # Early out if we have a selected use case
-    if None != st.session_state.get('pdata_selected_use_case_path'):
+    if None is not st.session_state.get('pdata_selected_use_case_path'):
         return True
-
-    # Import selector
-    from st_ui.option_selector import OptionSelector
 
     # Load the template folders
     options = generate_groups(template_folder)
@@ -111,7 +114,7 @@ def handle_template_selection(template_folder):
         return templates
 
     # Callback: Select
-    def on_select(option_key, sub_option_key, sub_option_dict):
+    def on_select(option_key, sub_option_key, _sub_option_dict):
         st.session_state.pdata_selected_use_case_path = os.path.join(option_key, sub_option_key)
         options_selector.clear_state()
         st.rerun()
@@ -144,7 +147,6 @@ def main():
     st.set_page_config(layout="wide", page_icon='🚀')
 
     # Check if we should display the JSON viewer
-    from st_ui.json_viewer import JSONViewer
     json_viewer = JSONViewer()
     if json_viewer.run():
         return
@@ -159,7 +161,8 @@ def main():
             # Load the template
             relative_path = st.session_state.pdata_selected_use_case_path
             base_dir = get_base_dir()
-            abs_path = os.path.normpath(os.path.join(base_dir, template_folder, relative_path)) + '.yaml'
+            abs_path = os.path.join(base_dir, template_folder, relative_path)
+            abs_path = os.path.normpath(abs_path) + '.yaml'
             config = load_yaml_file(abs_path)
 
             # Run the method - use defaults for source file and method based on app name
@@ -168,7 +171,12 @@ def main():
             app_filename = config.get('flow_app_filename', default_app_filename)
             relative_path = f"flow_apps/{app_filename}"
             method_name = config.get("method_name", "run")
-            load_and_run_static_method(relative_path, class_name, method_name, config, state_manager)
+            load_and_run_static_method(
+                relative_path=relative_path,
+                class_name=class_name,
+                method_name=method_name,
+                config=config,
+                state_manager=state_manager)
 
         except yaml.YAMLError as e:
             print(f"Error parsing YAML string: {e}")

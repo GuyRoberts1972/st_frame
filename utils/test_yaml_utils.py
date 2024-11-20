@@ -1,9 +1,9 @@
-# pylint: disable=C0116
+# pylint: disable=missing-function-docstring, missing-module-docstring, missing-class-docstring, protected-access
 import os
 import tempfile
 import shutil
 import unittest
-from yaml_utils import YamlUtils, RefResolver
+from yaml_utils import YAMLUtils, YAMLKeyResolver
 
 class TestMergeNested(unittest.TestCase):
 
@@ -11,85 +11,85 @@ class TestMergeNested(unittest.TestCase):
     def test_merge_nested_dicts(self):
         target = { "k1" : "v1"}
         source = { "k1" : "v1"}
-        target = RefResolver._merge_nested(target, source)
+        target = YAMLKeyResolver._merge_nested(target, source)
         self.assertEqual(target, { "k1" : "v1"})
 
         target = { "k1" : "v1", "k2" : "v2"}
         source = { "k1" : "v1"}
-        target = RefResolver._merge_nested(target, source)
+        target = YAMLKeyResolver._merge_nested(target, source)
         self.assertEqual(target, { "k1" : "v1", "k2" : "v2"})
 
         source = { "k1" : "v1"}
         target = { "k1" : "v1", "k2" : "v2"}
-        target = RefResolver._merge_nested(target, source)
+        target = YAMLKeyResolver._merge_nested(target, source)
         self.assertEqual(target, { "k1" : "v1", "k2" : "v2"})
 
         source = { "k1" : "v1", "dk1" : {"k1" : "v1"}}
         target = { "k1" : "v1", "k2" : "v2"}
-        target = RefResolver._merge_nested(target, source)
+        target = YAMLKeyResolver._merge_nested(target, source)
         self.assertEqual(target, { "k1" : "v1", "k2" : "v2", "dk1" : {"k1" : "v1"}})
 
         source = { "k1" : "v1", "dk1" : {"k1" : "v1"}}
         target = { "k1" : "v1", "k2" : "v2", "dk1" : {"k1" : "v1.1"}}
-        target = RefResolver._merge_nested(target, source)
+        target = YAMLKeyResolver._merge_nested(target, source)
         self.assertEqual(target, { "k1" : "v1", "k2" : "v2", "dk1" : {"k1" : "v1"}})
 
         source = { "k1" : "v1", "dk1" : {"k2" : "v2"}}
         target = { "k1" : "v1", "k2" : "v2", "dk1" : {"k1" : "v1.1"}}
-        target = RefResolver._merge_nested(target, source)
+        target = YAMLKeyResolver._merge_nested(target, source)
         self.assertEqual(target, { "k1" : "v1", "k2" : "v2", "dk1" : {"k1" : "v1.1",  "k2" : "v2"}})
 
     def test_merge_value(self):
         target = 'target'
         source = 'source'
-        target = RefResolver._merge_nested(target, source)
+        target = YAMLKeyResolver._merge_nested(target, source)
         self.assertEqual(target, 'source')
 
     def test_merge_nested_lists(self):
         target = [1, 2, 3]
         source = [4, 5, 6]
-        RefResolver._merge_nested(target, source)
+        YAMLKeyResolver._merge_nested(target, source)
         self.assertEqual(target, [1, 2, 3, 4, 5, 6])
 
     def test_merge_nested_list_to_non_list(self):
         target = {"a": 1}
         source = [1, 2, 3]
-        target = RefResolver._merge_nested(target, source)
+        target = YAMLKeyResolver._merge_nested(target, source)
         self.assertEqual(target, [1, 2, 3])
 
     def test_merge_nested_deep_dict(self):
         target = {"a": {"b": {"c": 1}}}
         source = {"a": {"b": {"d": 2}}}
-        target = RefResolver._merge_nested(target, source)
+        target = YAMLKeyResolver._merge_nested(target, source)
         self.assertEqual(target, {"a": {"b": {"c": 1, "d": 2}}})
 
     def test_merge_nested_mixed_types(self):
         target = {"a": [1, 2], "b": {"c": 3}}
         source = {"a": {"d": 4}, "b": [5, 6]}
-        target = RefResolver._merge_nested(target, source)
+        target = YAMLKeyResolver._merge_nested(target, source)
         self.assertEqual(target, {"a": {"d": 4}, "b": [5, 6]})
 
     def test_merge_nested_empty_source(self):
         target = {"a": 1}
         source = {}
-        target = RefResolver._merge_nested(target, source)
+        target = YAMLKeyResolver._merge_nested(target, source)
         self.assertEqual(target, {"a": 1})
 
     def test_merge_nested_empty_target(self):
         target = {}
         source = {"a": 1}
-        target = RefResolver._merge_nested(target, source)
+        target = YAMLKeyResolver._merge_nested(target, source)
         self.assertEqual(target, {"a": 1})
 
     def test_merge_nested_none_values(self):
         target = {"a": None}
         source = {"a": 1, "b": None}
-        target = RefResolver._merge_nested(target, source)
+        target = YAMLKeyResolver._merge_nested(target, source)
         self.assertEqual(target, {"a": 1, "b": None})
 
-class TestRefResolver(unittest.TestCase):
+class TestYAMLKeyResolver(unittest.TestCase):
     def setUp(self):
-        self.resolver = RefResolver()
+        self.resolver = YAMLKeyResolver()
 
     def test_basic(self):
         data = {
@@ -193,7 +193,7 @@ class TestRefResolver(unittest.TestCase):
         }
 
         with self.assertRaises(ValueError):
-            resolved = self.resolver.resolve(data)
+            self.resolver.resolve(data)
 
 
     def test_circular_reference(self):
@@ -206,7 +206,7 @@ class TestRefResolver(unittest.TestCase):
             self.resolver.resolve(data)
 
     def test_bad_special_key(self):
-        resolver = RefResolver()
+        resolver = YAMLKeyResolver()
         data = {
             "templates": {
                 "example": {"value": 42}
@@ -216,10 +216,10 @@ class TestRefResolver(unittest.TestCase):
             }
         }
         with self.assertRaises(ValueError):
-            resolved = resolver.resolve(data)
+            resolver.resolve(data)
 
 
-class TestYamlUtils(unittest.TestCase):
+class TestYAMLUtils(unittest.TestCase):
     def setUp(self):
         self.test_dir = tempfile.mkdtemp()
         self.lib_dir = os.path.join(self.test_dir, 'lib')
@@ -234,7 +234,7 @@ class TestYamlUtils(unittest.TestCase):
         with open(file_path, 'w', encoding='utf-8') as f:
             f.write(content)
 
-        result = YamlUtils.load_yaml_with_includes(file_path, self.lib_dir)
+        result = YAMLUtils.load_yaml_with_includes(file_path, self.lib_dir)
         self.assertEqual(result, {'key': 'value', 'list': ['item1', 'item2']})
 
     def test_load_yaml_with_local_include(self):
@@ -248,7 +248,7 @@ class TestYamlUtils(unittest.TestCase):
         with open(main_file, 'w', encoding='utf-8') as f:
             f.write(main_content)
 
-        result = YamlUtils.load_yaml_with_includes(main_file, self.lib_dir)
+        result = YAMLUtils.load_yaml_with_includes(main_file, self.lib_dir)
         self.assertEqual(result, {'key': 'value', 'included_key': 'included_value'})
 
     def test_load_yaml_with_lib_include(self):
@@ -262,7 +262,7 @@ class TestYamlUtils(unittest.TestCase):
         with open(main_file, 'w', encoding='utf-8') as f:
             f.write(main_content)
 
-        result = YamlUtils.load_yaml_with_includes(main_file, self.lib_dir)
+        result = YAMLUtils.load_yaml_with_includes(main_file, self.lib_dir)
         self.assertEqual(result, {'key': 'value', 'lib_key': 'lib_value'})
 
     def test_invalid_local_include(self):
@@ -272,7 +272,7 @@ class TestYamlUtils(unittest.TestCase):
             f.write(content)
 
         with self.assertRaises(ValueError):
-            YamlUtils.load_yaml_with_includes(file_path, self.lib_dir)
+            YAMLUtils.load_yaml_with_includes(file_path, self.lib_dir)
 
     def test_invalid_lib_include(self):
         content = "#!lib_include ../invalid.yaml"
@@ -281,7 +281,7 @@ class TestYamlUtils(unittest.TestCase):
             f.write(content)
 
         with self.assertRaises(ValueError):
-            YamlUtils.load_yaml_with_includes(file_path, self.lib_dir)
+            YAMLUtils.load_yaml_with_includes(file_path, self.lib_dir)
 
     def test_file_not_found(self):
         content = "#!local_include non_existent.yaml"
@@ -290,7 +290,7 @@ class TestYamlUtils(unittest.TestCase):
             f.write(content)
 
         with self.assertRaises(FileNotFoundError):
-            YamlUtils.load_yaml_with_includes(file_path, self.lib_dir)
+            YAMLUtils.load_yaml_with_includes(file_path, self.lib_dir)
 
     def test_load_yaml_with_lib_include_2(self):
         lib_content = "lib_key: lib_value"
@@ -304,7 +304,7 @@ class TestYamlUtils(unittest.TestCase):
         with open(main_file, 'w', encoding='utf-8') as f:
             f.write(main_content)
 
-        result = YamlUtils.load_yaml_with_includes(main_file, self.lib_dir)
+        result = YAMLUtils.load_yaml_with_includes(main_file, self.lib_dir)
         self.assertEqual(result, {'key': 'value', 'lib_key': 'lib_value'})
 
     def test_load_yaml_with_lib_include_3(self):
@@ -320,7 +320,7 @@ class TestYamlUtils(unittest.TestCase):
         with open(main_file, 'w', encoding='utf-8') as f:
             f.write(main_content)
 
-        result = YamlUtils.load_yaml_with_includes(main_file, self.lib_dir)
+        result = YAMLUtils.load_yaml_with_includes(main_file, self.lib_dir)
         self.assertEqual(result, {'key': 'value', 'lib_key': 'lib_value'})
 
 if __name__ == '__main__':
