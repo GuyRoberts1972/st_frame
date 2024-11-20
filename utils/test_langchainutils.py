@@ -1,3 +1,4 @@
+# pylint: disable=C0116
 import unittest
 import boto3
 import json
@@ -6,7 +7,7 @@ class TestLangChainUtils(unittest.TestCase):
 
     def test_bedrock_invocation(self):
         ''' test we can get a basic reponse back from a typical model '''
-        
+
         prompt = "Tell me a short story"
         bedrock_runtime = boto3.client('bedrock-runtime')
         model_id = 'anthropic.claude-3-sonnet-20240229-v1:0'

@@ -1,3 +1,4 @@
+# pylint: disable=C0116
 import streamlit as st
 import unittest
 from unittest.mock import patch, MagicMock

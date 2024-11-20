@@ -1,3 +1,4 @@
+# pylint: disable=C0116
 import unittest
 import test_helper
 test_helper.setup_path()

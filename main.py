@@ -1,6 +1,7 @@
 """ The main application """
 import streamlit as st
 from st_ui.side_bar_state_mgr import SideBarStateMgr
+from st_ui.side_bar_state_mgr import SideBarStateMgr
 import yaml
 from utils.yaml_utils import YAMLUtils, YAMLKeyResolver
 import os

@@ -14,7 +14,7 @@ class LangChainUtils:
 
     @staticmethod
     def get_chat_model_choices():
-        
+
         # todo: move these to data
         choices = {
             "Claude 3 Sonnet - Standard (Default)" : {
@@ -43,19 +43,19 @@ class LangChainUtils:
                 "model_kwargs" : {"max_tokens": 10, "temperature": 0.7}
             },
         }
-    
+
         # Done
         return choices
-    
+
     @staticmethod
     def get_chat_model(model_choice, region_name=None):
         ''' get the model to use for chat based on the choice '''
-        
+
         # Get the values for the model choice
         chat_model_choices = LangChainUtils.get_chat_model_choices()
         if model_choice not in chat_model_choices:
             raise Exception(f"Invalid model choice '{model_choice}")
-        
+
         model_choice = chat_model_choices[model_choice]
 
         # Set up the Bedrock client
@@ -77,12 +77,12 @@ class LangChainUtils:
     @staticmethod
     def list_available_models():
         ''' print a list of available models '''
-       
+
         bedrock_client = boto3.client('bedrock')
 
         try:
             response = bedrock_client.list_foundation_models()
-            
+
             print("Available models:")
             for model in response['modelSummaries']:
                 print(f"Model ID: {model['modelId']}")

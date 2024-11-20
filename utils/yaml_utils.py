@@ -66,6 +66,7 @@ class YAMLKeyResolver:
 
         return container_dict
 
+
     def _handle_ref_key(self, ref_value, resolved_value, container_dict, data):
         """ Handle the ref key """
         if isinstance(resolved_value, dict):
@@ -102,6 +103,7 @@ class YAMLKeyResolver:
                 raise ValueError(f"Circular reference detected: {ref_value}")
             self.resolution_path.append(ref_value)
 
+
             try:
 
                 # Look up the reference
@@ -116,6 +118,7 @@ class YAMLKeyResolver:
                     raise ValueError(f"unkown special key '{key}'")
 
             finally:
+
 
                 # Remove from circular dependency check
                 self.resolution_path.pop()
@@ -151,11 +154,13 @@ class YAMLKeyResolver:
             # For primitive types, return as is
             return obj
 
+
     def resolve(self, data):
         """ Resolve all the custom keys in the object and return a new object """
 
         # Start resolution with a deep copy of the data to avoid modifying the original
         return self._resolve_recursive(copy.deepcopy(data), data)
+
 
     @staticmethod
     def resolve_refs(data):
