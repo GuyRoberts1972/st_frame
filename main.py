@@ -2,14 +2,16 @@
 import streamlit as st
 from st_ui.side_bar_state_mgr import SideBarStateMgr  
 import yaml
-from utils.yaml_utils import YamlUtils
+from utils.yaml_utils import YamlUtils, RefResolver
 import os
 
 def load_yaml_file(file_path):
+    """ Load the YAML with includes and ref resolution """
 
     base_dir = get_base_dir()
     include_lib_path = os.path.join(base_dir, st.secrets['paths']['templates_include_lib'])
-    data = YamlUtils.load_yaml_with_includes(file_path, include_lib_path)
+    include_lib_path = os.path.normpath(include_lib_path)
+    data = YamlUtils.load_yaml(file_path, include_lib_path)
     return data
 
 def get_base_dir():

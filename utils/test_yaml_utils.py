@@ -2,7 +2,221 @@ import os
 import tempfile
 import shutil
 import unittest
-from yaml_utils import YamlUtils
+from yaml_utils import YamlUtils, RefResolver
+
+class TestMergeNested(unittest.TestCase):
+    
+
+    def test_merge_nested_dicts(self):
+        target = { "k1" : "v1"}
+        source = { "k1" : "v1"}
+        target = RefResolver._merge_nested(target, source)
+        self.assertEqual(target, { "k1" : "v1"})
+
+        target = { "k1" : "v1", "k2" : "v2"}
+        source = { "k1" : "v1"}
+        target = RefResolver._merge_nested(target, source)
+        self.assertEqual(target, { "k1" : "v1", "k2" : "v2"})
+        
+        source = { "k1" : "v1"}
+        target = { "k1" : "v1", "k2" : "v2"}
+        target = RefResolver._merge_nested(target, source)
+        self.assertEqual(target, { "k1" : "v1", "k2" : "v2"})
+
+        source = { "k1" : "v1", "dk1" : {"k1" : "v1"}}
+        target = { "k1" : "v1", "k2" : "v2"}
+        target = RefResolver._merge_nested(target, source)
+        self.assertEqual(target, { "k1" : "v1", "k2" : "v2", "dk1" : {"k1" : "v1"}})
+
+        source = { "k1" : "v1", "dk1" : {"k1" : "v1"}}
+        target = { "k1" : "v1", "k2" : "v2", "dk1" : {"k1" : "v1.1"}}
+        target = RefResolver._merge_nested(target, source)
+        self.assertEqual(target, { "k1" : "v1", "k2" : "v2", "dk1" : {"k1" : "v1"}})
+
+        source = { "k1" : "v1", "dk1" : {"k2" : "v2"}}
+        target = { "k1" : "v1", "k2" : "v2", "dk1" : {"k1" : "v1.1"}}
+        target = RefResolver._merge_nested(target, source)
+        self.assertEqual(target, { "k1" : "v1", "k2" : "v2", "dk1" : {"k1" : "v1.1",  "k2" : "v2"}})
+
+    def test_merge_value(self):
+        target = 'target'
+        source = 'source'
+        target = RefResolver._merge_nested(target, source)
+        self.assertEqual(target, 'source')
+
+    def test_merge_nested_lists(self):
+        target = [1, 2, 3]
+        source = [4, 5, 6]
+        RefResolver._merge_nested(target, source)
+        self.assertEqual(target, [1, 2, 3, 4, 5, 6])
+
+    def test_merge_nested_list_to_non_list(self):
+        target = {"a": 1}
+        source = [1, 2, 3]
+        target = RefResolver._merge_nested(target, source)
+        self.assertEqual(target, [1, 2, 3])
+
+    def test_merge_nested_deep_dict(self):
+        target = {"a": {"b": {"c": 1}}}
+        source = {"a": {"b": {"d": 2}}}
+        target = RefResolver._merge_nested(target, source)
+        self.assertEqual(target, {"a": {"b": {"c": 1, "d": 2}}})
+
+    def test_merge_nested_mixed_types(self):
+        target = {"a": [1, 2], "b": {"c": 3}}
+        source = {"a": {"d": 4}, "b": [5, 6]}
+        target = RefResolver._merge_nested(target, source)
+        self.assertEqual(target, {"a": {"d": 4}, "b": [5, 6]})
+
+    def test_merge_nested_empty_source(self):
+        target = {"a": 1}
+        source = {}
+        target = RefResolver._merge_nested(target, source)
+        self.assertEqual(target, {"a": 1})
+
+    def test_merge_nested_empty_target(self):
+        target = {}
+        source = {"a": 1}
+        target = RefResolver._merge_nested(target, source)
+        self.assertEqual(target, {"a": 1})
+
+    def test_merge_nested_none_values(self):
+        target = {"a": None}
+        source = {"a": 1, "b": None}
+        target = RefResolver._merge_nested(target, source)
+        self.assertEqual(target, {"a": 1, "b": None})
+
+class TestRefResolver(unittest.TestCase):
+    def setUp(self):
+        self.resolver = RefResolver()
+
+    def test_basic(self):
+        data = {
+            "templates": {
+                "bodyparts": {
+                    "legs": 4,
+                    "eyes": 2,
+                    "tail": "the dict will override this",
+                    "front": "ref2 will override this",
+                    "dict": {"key1": "val1"}
+                },
+                "wheels": {
+                    "front": 2,
+                    "steering": 1,
+                    "tail": 0,
+                    "list": ['dict', 'will', 'override']
+                }
+            },
+            "animal": {
+                "legs": "ref1 will override this",
+                "$ref": ["#/templates/bodyparts","#/templates/wheels"],
+                "nose": "long",
+                "tail": "no",
+                "list": ['overridden']
+            }
+        }
+
+        resolved = self.resolver.resolve(data)
+        expected = {
+            "legs": 4,
+            "eyes": 2,
+            "front": 2,
+            "steering": 1,
+            "nose": "long",
+            "tail": "no",
+            "dict": {"key1": "val1"},
+            "list": ['overridden']
+        }
+        self.assertDictEqual(resolved['animal'], expected)
+
+    def test_nested(self):
+    
+        data = {
+            "templates": {
+                "bodyparts": {
+                    "legs": 4,
+                    "left_foot": {
+                        "big_toe": "big",
+                        "middle_toe" : "override me"
+                        }
+                }
+            },
+            "animal": {
+                "legs": "ref1 will override this",
+                "$allOf": "#/templates/bodyparts",
+                "left_foot" : {
+                    "middle_toe" : "medium",
+                    "pinky_toe" : "small"
+                }
+            }
+        }
+
+        resolved = self.resolver.resolve(data)
+        expected = {
+            "legs": 4,
+            "left_foot" : {
+                "big_toe": "big",
+                "middle_toe" : "medium",
+                "pinky_toe" : "small"
+            }
+        }
+        self.assertDictEqual(resolved['animal'], expected)
+
+    def test_invalid_reference(self):
+        data = { "invalid": { "$ref": "#/nonexistent/path" } }
+        with self.assertRaises(ValueError):
+            self.resolver.resolve(data)
+        data = { "$ref": "badpath" }
+        with self.assertRaises(ValueError):
+            self.resolver.resolve(data)
+
+    def test_chained_reference(self):
+        data = {
+            "first": { "key": "value" },
+            "second" : { "$ref" : "#/first" },
+            "third" : { "$ref" : "#/second" }
+        }
+
+        expected = {
+            "first": { "key": "value" },
+            "second" : { "key": "value" },
+            "third" : { "key": "value"}
+        }
+        resolved = self.resolver.resolve(data)
+        self.assertDictEqual(resolved, expected)
+
+    def test_list(self):
+        data = {
+            "key_value": [ 1, 2, 3],
+            "key_value_copy" : { "$ref" : "#/key_value" },
+        }
+
+        with self.assertRaises(ValueError):
+            resolved = self.resolver.resolve(data)
+
+
+    def test_circular_reference(self):
+        data = {
+            "circular": {
+                "$ref": "#/circular"
+            }
+        }
+        with self.assertRaises(ValueError):
+            self.resolver.resolve(data)
+
+    def test_bad_special_key(self):
+        resolver = RefResolver()
+        data = {
+            "templates": {
+                "example": {"value": 42}
+            },
+            "test": {
+                "$unknown": "#/templates/example"
+            }
+        }
+        with self.assertRaises(ValueError):
+            resolved = resolver.resolve(data)
+
 
 class TestYamlUtils(unittest.TestCase):
     def setUp(self):

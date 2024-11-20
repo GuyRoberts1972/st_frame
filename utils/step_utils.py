@@ -339,8 +339,11 @@ class BaseFlowStep(BaseFlowStep_key_mgmt, BaseFlowStep_ack_mgmb):
                 }
             return action
         
-        # Common short cuts
+        # Action buttons
         act_reset = get_button('reset', lambda : self.on_reset())
+        act_reset_to_prev = get_button('reset_to_prev', lambda : self.on_reset_to_prev_step())
+        act_reset_from_here = get_button('reset_from_here', lambda : self.on_reset_from_here())
+        act_reset_all = get_button('reset_all', lambda : self.on_reset_all())
         act_view_JSON = get_button('view_json', lambda : self.on_view_JSON())
 
         def fn_step_content():
@@ -364,7 +367,8 @@ class BaseFlowStep(BaseFlowStep_key_mgmt, BaseFlowStep_ack_mgmb):
                 # Do it
                 self.do(step_config, step_state, step_status)
                 # Actions
-                actions = [act_reset, act_view_JSON]
+                actions = [act_reset, act_reset_to_prev, act_reset_all]
+                actions = actions + [act_view_JSON]
             elif step_status == StepStatus.ACTIVE_ACK_CHANGES:
                 # Do it
                 self.do(step_config, step_state, step_status)
@@ -375,7 +379,8 @@ class BaseFlowStep(BaseFlowStep_key_mgmt, BaseFlowStep_ack_mgmb):
                 # Do it
                 self.do(step_config, step_state, step_status)
                 # Actions
-                actions = [act_reset, act_view_JSON]
+                actions = [act_reset, act_reset_to_prev, act_reset_from_here, act_reset_all]
+                actions = actions + [act_view_JSON]
             else:
                 st.warning('This step is an unknown state')
             
@@ -409,6 +414,8 @@ class BaseFlowStep(BaseFlowStep_key_mgmt, BaseFlowStep_ack_mgmb):
     
     ## Action handlers
     def on_reset(self, reset_output_key=True, reset_internal_keys=True):
+        """ Clear this step's state """
+
         
         # Clear the output key
         if reset_output_key:
@@ -421,7 +428,31 @@ class BaseFlowStep(BaseFlowStep_key_mgmt, BaseFlowStep_ack_mgmb):
             for internal_key in internal_keys:
                 st.session_state[internal_key] = None
 
+    def on_reset_all(self, reset_output_key=True, reset_internal_keys=True):
+        """ Clear the state of all the steps in the flow """
+        
+        app = self.get_app()
+        step_names = app.get_step_names()
+        for step_name in step_names:
+            step = app.get_step(step_name)
+            step.on_reset(reset_output_key, reset_internal_keys)
+
+    def on_reset_from_here(self, reset_output_key=True, reset_internal_keys=True):
+        """ Clear this step's state and all the subsequent steps in the flow """
+        
+        cur_step = self
+        while cur_step != None:
+            cur_step.on_reset(reset_output_key, reset_internal_keys)
+            cur_step = cur_step.get_next_step()
+
+    def on_reset_to_prev_step(self, reset_output_key=True, reset_internal_keys=True):
+        """ Clear this step's state and the previous ones """
+        
+        self.on_reset(reset_output_key, reset_internal_keys)
+        self.get_prev_step().on_reset(reset_output_key, reset_internal_keys)
+
     def on_view_JSON(self):
+        """ View this steps json """
 
         # Gather all the steps keys into a dict 
         key_dict = {}
@@ -524,8 +555,12 @@ class BaseFlowStep(BaseFlowStep_key_mgmt, BaseFlowStep_ack_mgmb):
         return dependency_step.get_output_key()
     
     def get_prev_step(self):
-        ''' Get the prvious step or None '''
+        ''' Get the previous step or None '''
         return self.get_app().get_prev_step(self.get_name())
+    
+    def get_next_step(self):
+        ''' Get the next step or None '''
+        return self.get_app().get_next_step(self.get_name())
     
     def get_prev_step_heading(self, default='No Previous Step'):
         """ Get the heading of the previous step - or return default"""
