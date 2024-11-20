@@ -85,9 +85,9 @@ class TestBaseFlowApp(unittest.TestCase):
         mock_step1.get_name.return_value = 'step1'
         mock_step2.get_name.return_value = 'step2'
         mock_create_instance.side_effect = [mock_step1, mock_step2]
-        
+
         self.app.load_steps()
-        
+
         self.assertEqual(len(self.app.steps), 2)
         self.assertIn('step1', self.app.steps)
         self.assertIn('step2', self.app.steps)
@@ -101,9 +101,9 @@ class TestBaseFlowApp(unittest.TestCase):
         mock_step2 = MagicMock(spec=BaseFlowStep)
         self.app.steps = {'step1': mock_step1, 'step2': mock_step2}
         mock_input_data_ready.return_value = True
-        
+
         self.app.show_steps()
-        
+
         mock_step1.show.assert_called_once()
         mock_step2.show.assert_called_once()
         self.state_manager.save_session_to_state.assert_called_once()

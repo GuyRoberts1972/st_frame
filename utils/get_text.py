@@ -58,7 +58,7 @@ class TxtGetter:
         "text/csv": lambda file: TxtGetter.from_csv(file)
     }
 
-     
+
     @staticmethod
     def from_multiline_text(text):
         return text
@@ -88,8 +88,8 @@ class TxtGetter:
         def shape_has_table(shape):
             ''' Return true of the shape has a table '''
             try:
-                # No attribute no table 
-                if not hasattr(shape, 'table'):  
+                # No attribute no table
+                if not hasattr(shape, 'table'):
                     return False
                 # Try and enumerate - will throw exception if no table
                 for _i, _row in enumerate(shape.table.rows, 1):
@@ -148,7 +148,7 @@ class TxtGetter:
     def from_xls(file_path):
         df = pd.read_excel(file_path)
         return df.to_string()
-    
+
     @staticmethod
     def from_csv(file_path):
         text = ""
@@ -173,7 +173,7 @@ class TxtGetter:
                 "creation_date": datetime.fromtimestamp(stat.st_ctime).isoformat(),
                 "last_modified": datetime.fromtimestamp(stat.st_mtime).isoformat(),
             }
-        
+
         def format_metadata(metadata):
             formatted = "Metadata:\n"
             for key, value in metadata.items():
@@ -194,7 +194,7 @@ class TxtGetter:
             extracted_text += format_metadata(metadata)
 
             file_content = extractor(file_path)
-            
+
             # Add word count to metadata for text-based files
             if file_type not in ["application/vnd.ms-excel", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"]:
                 word_count = len(file_content.split())
@@ -213,19 +213,19 @@ class TxtGetter:
         soup = BeautifulSoup(response.text, 'html.parser')
         text = f"Text extracted from: {src}\n\n"
         return text + ' '.join([p.get_text() for p in soup.find_all('p')])
-    
+
     @staticmethod
     def from_urls(urls):
         " get text for multiple urls  "
-        
+
         url_list = TxtGetterHelpers.split_string(urls)
         text = ''
         for url in url_list:
             text = text + TxtGetter.from_url(url)
             text = text + "\n\n"
-        
+
         return text
-    
+
     @staticmethod
     def from_jira_issue(issue_key):
         # Trim space
@@ -235,7 +235,7 @@ class TxtGetter:
         secrets = st.secrets['atlassian']
         jira_url = secrets['jira_url']
         jira_api_endpoint = secrets['jira_api_endpoint']
-        email = secrets['email'] 
+        email = secrets['email']
         api_token = secrets['api_token']
 
         def handle_error(response, issue_key):
@@ -249,7 +249,7 @@ class TxtGetter:
             url = f"{jira_url}{jira_api_endpoint}/issue/{issue_key}"
             auth = HTTPBasicAuth(email, api_token)
             headers = {"Accept": "application/json"}
-            
+
             response = requests.get(url, headers=headers, auth=auth)
             handle_error(response, issue_key)
             return response.json()
@@ -258,14 +258,14 @@ class TxtGetter:
             url = f"{jira_url}{jira_api_endpoint}/issue/{issue_key}/comment"
             auth = HTTPBasicAuth(email, api_token)
             headers = {"Accept": "application/json"}
-            
+
             response = requests.get(url, headers=headers, auth=auth)
             handle_error(response, issue_key)
             return response.json()
 
         def format_description(description):
             formatted_text = ""
-            
+
             def process_content(content):
                 nonlocal formatted_text
                 for item in content:
@@ -277,12 +277,12 @@ class TxtGetter:
                         formatted_text += item['text']
                     elif item['type'] == 'hardBreak':
                         formatted_text += "\n"
-            
+
             if description and 'content' in description:
                 process_content(description['content'])
 
             return formatted_text.strip()
-        
+
         def format_issue_data(issue_data, comments_data):
             get_issue = lambda path, default="N/A": TxtGetterHelpers.get_nested_value(issue_data, path, default)
             get_comments = lambda path, default="N/A": TxtGetterHelpers.get_nested_value(comments_data, path, default)
@@ -328,7 +328,7 @@ class TxtGetter:
                         formatted_output += f"- {get_link('type.inward', 'Linked from')} {get_linked('key')}: {get_linked('fields.summary')}\n"
             else:
                 formatted_output += "No linked issues found.\n"
-            
+
             return formatted_output.strip()
 
         # Main execution
@@ -337,17 +337,17 @@ class TxtGetter:
         comments_data = get_issue_comments(issue_key)
         formatted_issue = format_issue_data(issue_data, comments_data)
         return formatted_issue
-    
+
     @staticmethod
     def from_jira_issues(issue_keys):
         " get text for multiple jira tickets "
-        
+
         issues_keys_list = TxtGetterHelpers.split_string(issue_keys)
         text = ''
         for issue_key in issues_keys_list:
             text = text + TxtGetter.from_jira_issue(issue_key)
             text = text + "\n\n"
-        
+
         return text
 
     @staticmethod
@@ -363,13 +363,13 @@ class TxtGetter:
 
         def get_issues_data(jql, start_at=0, max_results=50):
             url = f"{secrets['jira_url']}{secrets['jira_api_endpoint']}/search"
-            
+
             auth = HTTPBasicAuth(secrets['email'], secrets['api_token'])
             headers = {
                 "Accept": "application/json",
                 "Content-Type": "application/json"
             }
-            
+
             payload = json.dumps({
                 "jql": jql,
                 "startAt": start_at,
@@ -379,14 +379,14 @@ class TxtGetter:
                     "reporter", "assignee", "description", "comment", "issuelinks"
                 ]
             })
-            
+
             response = requests.post(url, data=payload, headers=headers, auth=auth)
             handle_error(response)
             return response.json()
 
         def format_description(description):
             formatted_text = ""
-            
+
             def process_content(content):
                 nonlocal formatted_text
                 for item in content:
@@ -398,18 +398,18 @@ class TxtGetter:
                         formatted_text += item['text']
                     elif item['type'] == 'hardBreak':
                         formatted_text += "\n"
-            
+
             if description and 'content' in description:
                 process_content(description['content'])
-        
+
             return formatted_text.strip()
 
         def format_issues_data(issues_data):
             formatted_output = ""
-            
+
             for issue in issues_data['issues']:
                 get_issue = lambda path, default="N/A": TxtGetterHelpers.get_nested_value(issue, path, default)
-                
+
                 issue_text = textwrap.dedent(f"""\
                     Issue Key: {get_issue('key')}
                     Summary: {get_issue('fields.summary')}
@@ -447,11 +447,11 @@ class TxtGetter:
                         linked_issue = link['inwardIssue']
                         get_linked = lambda path, default="N/A": TxtGetterHelpers.get_nested_value(linked_issue, path, default)
                         formatted_output += f"- {get_link('type.inward', 'Linked from')} {get_linked('key')}: {get_linked('fields.summary')}\n"
-                
+
                 formatted_output += "\n---\n"  # Separator between issues
-            
+
             return formatted_output.strip()
-        
+
         # Main execution with pagination
         all_issues = []
         start_at = 0
@@ -459,10 +459,10 @@ class TxtGetter:
         while len(all_issues) < max_results:
             issues_data = get_issues_data(jql_query, start_at, page_size)
             all_issues.extend(issues_data['issues'])
-            
+
             if len(issues_data['issues']) < page_size or len(all_issues) >= issues_data['total']:
                 break
-            
+
             start_at += page_size
 
         # Trim the results to max_results if necessary
@@ -470,14 +470,14 @@ class TxtGetter:
 
         # Create a new dictionary with the structure expected by format_issues_data
         formatted_data = {'issues': all_issues}
-        
+
         formatted_issues = format_issues_data(formatted_data)
         return formatted_issues
-    
+
     @staticmethod
     def from_confluence_page(page_url_or_id):
         """Extract text and metadata from a Confluence page, including tables and embedded components."""
-        
+
         class ConfluencePageExtractor:
             def __init__(self, url, username, api_token):
                 self.confluence = Confluence(
@@ -489,11 +489,11 @@ class TxtGetter:
             def extract_page_id_from_url(self, url):
                 parsed_url = urlparse(url)
                 path = parsed_url.path
-                
+
                 if '/pages/' in path:
                     page_id = path.split('/pages/')[1].split('/')[0]
                     return page_id
-                
+
                 query_params = parse_qs(parsed_url.query)
                 if 'pageId' in query_params:
                     return query_params['pageId'][0]
@@ -505,7 +505,7 @@ class TxtGetter:
 
                 # Fetch the page content with the 'view' representation
                 page_content = self.confluence.get_page_by_id(page_id, expand='body.view,version,metadata.labels')
-                
+
                 html_content = page_content['body']['view']['value']
                 soup = BeautifulSoup(html_content, 'html.parser')
 
@@ -514,7 +514,7 @@ class TxtGetter:
                 author = page_content['version']['by']['displayName']
                 last_updated = datetime.fromisoformat(page_content['version']['when'].rstrip('Z')).strftime('%Y-%m-%d %H:%M:%S')
                 labels = [label['name'] for label in page_content['metadata']['labels']['results']]
-                
+
                 # Extract links
                 links = [{'text': a.text, 'href': urljoin(page, a['href'])} for a in soup.find_all('a', href=True)]
 
@@ -572,5 +572,5 @@ class TxtGetter:
         for page in page_list:
             text = text + TxtGetter.from_confluence_page(page)
             text = text + "\n\n"
-        
+
         return text
