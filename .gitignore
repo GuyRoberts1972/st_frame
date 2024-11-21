@@ -8,6 +8,10 @@ poc/
 # Streamlit (including secrets.toml)
 .streamlit/
 
+# PyTest coverage
+.coverage
+coverage.xml
+
 # Python
 __pycache__/
 *.py[cod]

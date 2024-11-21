@@ -96,7 +96,6 @@ class TestBaseFlowApp(unittest.TestCase):
         mock_create_instance.assert_any_call(class_name='TestStep2', name='step2', app=self.app)
 
     @patch.object(BaseFlowStep, 'input_data_ready')
-    @patch.object(BaseFlowStep, 'show')
     def test_show_steps(self, mock_input_data_ready):
         mock_step1 = MagicMock(spec=BaseFlowStep)
         mock_step2 = MagicMock(spec=BaseFlowStep)
