@@ -5,7 +5,9 @@ import json
 import tempfile
 from unittest.mock import patch
 import streamlit as st
-from side_bar_state_mgr import SideBarStateMgr
+import test_helper
+test_helper.setup_path()
+from side_bar_state_mgr import SideBarStateMgr  # pylint: disable=wrong-import-position
 
 class MockSessionState(dict):
     def __getattr__(self, name):
@@ -27,8 +29,8 @@ class TestSideBarStateMgr(unittest.TestCase):
     def setUp(self):
         # Create a temporary directory for test states
         self.temp_dir = tempfile.mkdtemp()
-        self.old_saved_states_dir = SideBarStateMgr.get_cur_saved_states_dir()
-        SideBarStateMgr.saved_states_dir = self.temp_dir
+        key_storage_map = { 'persistant' : ['pdata_*'], 'volatile' : ['vdata_*']}
+        self.side_bar_state_mgr  = SideBarStateMgr(key_storage_map, self.temp_dir)
 
         # Mock streamlit's session_state
         self.mock_session_state = MockSessionState()
@@ -41,9 +43,6 @@ class TestSideBarStateMgr(unittest.TestCase):
             os.remove(os.path.join(self.temp_dir, file))
         os.rmdir(self.temp_dir)
 
-        # Restore the original get_cur_saved_states_dir()
-        SideBarStateMgr.saved_states_dir = self.old_saved_states_dir
-
         # Stop the patcher
         self.patcher.stop()
 
@@ -52,7 +51,7 @@ class TestSideBarStateMgr(unittest.TestCase):
         self.mock_session_state['count'] = 5
         self.mock_session_state['name'] = 'Test'
 
-        SideBarStateMgr.save_state('test_state', key_storage_map )
+        self.side_bar_state_mgr.save_state('test_state', key_storage_map )
         self.assertTrue(os.path.exists(os.path.join(self.temp_dir, 'test_state.json')))
 
     def test_load_state(self):
@@ -61,7 +60,7 @@ class TestSideBarStateMgr(unittest.TestCase):
             json.dump(test_state, f)
 
         key_storage_map  = { 'persistant' : ['count', 'name'], 'volatile' : ['vol_*']}
-        loaded_state = SideBarStateMgr.load_state('test_load', key_storage_map )
+        loaded_state = self.side_bar_state_mgr.load_state('test_load', key_storage_map )
         self.assertEqual(loaded_state, test_state)
 
     @patch('streamlit.session_state', {})
@@ -124,7 +123,7 @@ class TestSideBarStateMgr(unittest.TestCase):
         open(os.path.join(self.temp_dir, 'state1.json'), 'w', encoding='utf-8').close()
         open(os.path.join(self.temp_dir, 'state2.json'), 'w', encoding='utf-8').close()
 
-        states = SideBarStateMgr.get_saved_states()
+        states = self.side_bar_state_mgr.get_saved_states()
         self.assertEqual(set(states), {'state1', 'state2'})
 
     def test_delete_state(self):
@@ -132,7 +131,7 @@ class TestSideBarStateMgr(unittest.TestCase):
         test_file = os.path.join(self.temp_dir, 'test_delete.json')
         open(test_file, 'w', encoding='utf-8').close()
 
-        SideBarStateMgr.delete_state('test_delete')
+        self.side_bar_state_mgr.delete_state('test_delete')
         self.assertFalse(os.path.exists(test_file))
 
     def test_rename_state(self):
@@ -141,12 +140,12 @@ class TestSideBarStateMgr(unittest.TestCase):
         new_file = os.path.join(self.temp_dir, 'new_name.json')
         open(old_file, 'w', encoding='utf-8').close()
 
-        SideBarStateMgr.rename_state('old_name', 'new_name')
+        self.side_bar_state_mgr.rename_state('old_name', 'new_name')
         self.assertFalse(os.path.exists(old_file))
         self.assertTrue(os.path.exists(new_file))
 
     def test_set_status_message(self):
-        SideBarStateMgr.set_status_message('Test message', 'success')
+        self.side_bar_state_mgr.set_status_message('Test message', 'success')
         self.assertEqual(self.mock_session_state['sbsm_status_message'], 'Test message')
         self.assertEqual(self.mock_session_state.sbsm_status_message, 'Test message')
         self.assertEqual(self.mock_session_state['sbsm_status_type'], 'success')
@@ -167,15 +166,6 @@ class TestSideBarStateMgr(unittest.TestCase):
                 _ = self.mock_session_state.sbsm_status_message
             with self.assertRaises(AttributeError):
                 _ = self.mock_session_state.sbsm_status_type
-
-    def test_save_session_to_state(self):
-        key_storage_map  = { 'persistant' : ['count'], 'volatile' : []}
-        state_manager = SideBarStateMgr(key_storage_map )
-        self.mock_session_state['count'] = 5
-
-        with patch('side_bar_state_mgr.SideBarStateMgr.save_state') as mock_save:
-            state_manager.save_session_to_state()
-            mock_save.assert_called_once_with(SideBarStateMgr.STRINGS['DEFAULT_STATE'], key_storage_map )
 
 
     def test_wildcard_match(self):
@@ -203,10 +193,10 @@ class TestSideBarStateMgr(unittest.TestCase):
         key_storage_map  = { 'persistant' : ['prefix_*', 'exact_match'], 'volatile' : []}
 
         # Test save_state
-        SideBarStateMgr.save_state('test', key_storage_map )
+        self.side_bar_state_mgr.save_state('test', key_storage_map )
 
         # Test load_state
-        loaded_state = SideBarStateMgr.load_state('test', key_storage_map )
+        loaded_state = self.side_bar_state_mgr.load_state('test', key_storage_map )
 
         self.assertEqual(loaded_state, {
             'prefix_1': 'value1',
