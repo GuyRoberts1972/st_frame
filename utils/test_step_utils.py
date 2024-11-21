@@ -2,9 +2,7 @@
 import unittest
 from unittest.mock import MagicMock
 import streamlit as st
-import test_helper
-test_helper.setup_path()
-from utils.step_utils import BaseFlowStep, StepConfigException # pylint: disable=wrong-import-position
+from utils.step_utils import BaseFlowStep, StepConfigException
 
 class TestFlowStep(BaseFlowStep):
     """ Stub flow step for testing """

@@ -5,9 +5,7 @@ import json
 import tempfile
 from unittest.mock import patch
 import streamlit as st
-import test_helper
-test_helper.setup_path()
-from side_bar_state_mgr import SideBarStateMgr  # pylint: disable=wrong-import-position
+from st_ui.side_bar_state_mgr import SideBarStateMgr
 
 class MockSessionState(dict):
     def __getattr__(self, name):

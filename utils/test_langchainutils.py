@@ -2,9 +2,7 @@
 import unittest
 from unittest.mock import patch, MagicMock
 from langchain_aws import ChatBedrock
-import test_helper
-test_helper.setup_path()
-from utils.langchain_utils import LangChainUtils # pylint: disable=wrong-import-position
+from utils.langchain_utils import LangChainUtils
 
 class TestLangChainUtils(unittest.TestCase):
 

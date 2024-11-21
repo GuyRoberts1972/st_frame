@@ -1,8 +1,6 @@
 # pylint: disable=missing-function-docstring, missing-module-docstring, missing-class-docstring, protected-access
-import test_helper
-test_helper.setup_path()
 import unittest
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 from flow_utils import FlowUtils
 
 
