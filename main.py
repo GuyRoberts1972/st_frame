@@ -144,7 +144,7 @@ def main():
     """ Main execution """
 
     # Wide
-    st.set_page_config(layout="wide", page_icon='🚀')
+    st.set_page_config(layout="wide", page_icon='\U0001F680')
 
     # Check if we should display the JSON viewer
     json_viewer = JSONViewer()

@@ -8,8 +8,16 @@ class TestOptionSelector(unittest.TestCase):
 
     def setUp(self):
         self.options = {
-            "fruits": {"icon": "🍎", "title": "Fruits", "description": "Fresh and juicy fruits"},
-            "vegetables": {"icon": "🥕", "title": "Vegetables", "description": "Healthy and nutritious veggies"},
+            "fruits": {
+                "icon": "\U0001F34E",  # Red Apple
+                "title": "Fruits",
+                "description": "Fresh and juicy fruits"
+            },
+            "vegetables": {
+                "icon": "\U0001F955",  # Carrot
+                "title": "Vegetables",
+                "description": "Healthy and nutritious veggies"
+            },
         }
         self.get_sub_options = lambda x: {
             "sub1": {"title": "Sub1", "description": "Description 1", "enabled": True},

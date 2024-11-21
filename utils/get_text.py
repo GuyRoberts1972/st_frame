@@ -177,6 +177,7 @@ class TxtGetter:
 
     @staticmethod
     def from_uploaded_files(uploaded_files):
+        """ Extract text from uploaded files """
         total_files = len(uploaded_files)
         extracted_text = f"Text extracted from {total_files} files\n\n"
 
@@ -555,7 +556,7 @@ class TxtGetter:
                             if element.name.startswith('h'):
                                 paragraphs.append(f"\n\n{element.name.upper()}: {text}\n")
                             elif element.name == 'li':
-                                paragraphs.append(f"• {text}")
+                                paragraphs.append(f"- {text}")
                             else:
                                 paragraphs.append(text)
 

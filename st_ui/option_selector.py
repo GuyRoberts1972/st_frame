@@ -119,10 +119,26 @@ class OptionSelector:
 
 def example_usage():
     options = {
-        "fruits": {"icon": "🍎", "title": "Fruits", "description": "Fresh and juicy fruits"},
-        "vegetables": {"icon": "🥕", "title": "Vegetables", "description": "Healthy and nutritious veggies"},
-        "meats": {"icon": "🍖", "title": "Meats", "description": "Protein-rich meat options"},
-        "dairy": {"icon": "🧀", "title": "Dairy", "description": "Calcium-rich dairy products"},
+        "fruits": {
+            "icon": "\U0001F34E",  # Red Apple
+            "title": "Fruits",
+            "description": "Fresh and juicy fruits"
+        },
+        "vegetables": {
+            "icon": "\U0001F955",  # Carrot
+            "title": "Vegetables",
+            "description": "Healthy and nutritious veggies"
+        },
+        "meats": {
+            "icon": "\U0001F356",  # Meat on Bone
+            "title": "Meats",
+            "description": "Protein-rich meat options"
+        },
+        "dairy": {
+            "icon": "\U0001F9C0",  # Cheese Wedge
+            "title": "Dairy",
+            "description": "Calcium-rich dairy products"
+        },
     }
 
     def get_sub_options(option_key):

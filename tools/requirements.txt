@@ -1,0 +1,2 @@
+chardet==5.2.0
+prettytable==3.12.0
