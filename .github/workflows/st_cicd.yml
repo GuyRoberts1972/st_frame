@@ -64,8 +64,8 @@ jobs:
     - name: Set Output
       id: set-env
       run: |
-        run: echo "{image_name}={$IMAGE_NAME}" >> $GITHUB_OUTPUT
-        run: echo "{image_tag}={$TAG}" >> $GITHUB_OUTPUT
+        echo "{image_name}={$IMAGE_NAME}" >> $GITHUB_OUTPUT
+        echo "{image_tag}={$TAG}" >> $GITHUB_OUTPUT
 
   pre-push-smoke-test:
     name: Pre-Push Smoke Test
