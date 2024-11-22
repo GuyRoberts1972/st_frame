@@ -5,6 +5,7 @@ FROM python:3.9-slim
 WORKDIR /app
 
 # Copy application code
+# todo: don't do test files
 COPY utils ./utils
 COPY st_ui ./st_ui
 COPY main.py ./main.py
