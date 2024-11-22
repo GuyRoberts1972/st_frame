@@ -1,15 +1,17 @@
 name: ST UI Build Test Deploy
 
-on: #[push]
+on:
+  # Manual run
   workflow_dispatch:
-# workflow_run:
-#    workflows:
-#      - Pytest
-#    types:
-#      - completed
 
+  # Tigger on unit test completion
+  workflow_run:
+    workflows:
+      - Pytest
+    types:
+      - completed
 
-
+# Want to publish
 permissions:
   contents: read
   packages: write
@@ -19,7 +21,8 @@ jobs:
     name: Build Docker Image
     runs-on: ubuntu-latest
 
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    # Check success if this was tiggered by another workflow run
+    if: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success' }}
 
     outputs:
       image_name: ${{ steps.set-env.outputs.image_name }}
