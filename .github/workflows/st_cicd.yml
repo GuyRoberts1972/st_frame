@@ -110,7 +110,7 @@ jobs:
     steps:
     - name: Pull Docker Image
       env:
-        IMAGE_NAME: ${{ needs.build-test-push.image_name }}
+        IMAGE_NAME: ${{ needs.build-test-push.outputs.image_name }}
         IMAGE_TAG: ${{ needs.build-test-push.outputs.image_tag }}
       run: |
         docker pull $IMAGE_NAME:$IMAGE_TAG
