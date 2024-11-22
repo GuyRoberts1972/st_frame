@@ -4,15 +4,14 @@ FROM python:3.9-slim
 # Set up the working directory
 WORKDIR /app
 
-# Copy application code and install dependencies
-COPY utils/requirements.txt ./utils
-COPY st/requirements.txt ./st
-RUN pip install --no-cache-dir -r utils/requirements.txt
-RUN pip install --no-cache-dir -r st/requirements.txt
-
+# Copy application code
 COPY utils ./utils
 COPY st_ui ./st_ui
 COPY main.py ./main.py
+
+# Install python dependencies
+RUN pip install --no-cache-dir -r utils/requirements.txt
+RUN pip install --no-cache-dir -r st_ui/requirements.txt
 
 # Expose Streamlit default port
 EXPOSE 8501
