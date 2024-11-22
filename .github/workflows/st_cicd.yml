@@ -57,10 +57,10 @@ jobs:
         echo "IMAGE_TAG=$TAG" >> $GITHUB_ENV
 
     - name: Set Output
-        id: set-env
-        run: |
-          echo "::set-output name=image_name::$IMAGE_NAME"
-          echo "::set-output name=image_tag::$TAG"
+      id: set-env
+      run: |
+        echo "::set-output name=image_name::$IMAGE_NAME"
+        echo "::set-output name=image_tag::$TAG"
 
   pre-push-smoke-test:
     name: Pre-Push Smoke Test
