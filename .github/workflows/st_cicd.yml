@@ -22,7 +22,7 @@ jobs:
     runs-on: ubuntu-latest
 
     # Check success if this was tiggered by another workflow run
-    if: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success' }}
+    if: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch' }}
 
     outputs:
       image_name: ${{ steps.set-env.outputs.image_name }}
