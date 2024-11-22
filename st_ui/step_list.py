@@ -1,7 +1,22 @@
+""" Displays the steps in a flow """
 import streamlit as st
-from streamlit_option_menu import option_menu
 
 class StepContainer:
+    """ The main widget container within which the steps are displayed """
+
+    style = """
+            <style>
+            /* Font for the expander summary */
+            .stExpander details > summary > span > div > p {
+                font-size: 25px;
+                font-weight: 550;
+                }
+             .stExpander button > div > p {
+                    white-space: nowrap;
+                }
+
+            </style>
+            """
 
     def __init__(self):
         self.style_added = False
@@ -10,22 +25,10 @@ class StepContainer:
         """ add the CSS styling once """
         if self.style_added:
             return
-        
-        # Add the style 
-        st.markdown("""
-            <style>
-            /* Font for the expander summary */ 
-            .stExpander details > summary > span > div > p {
-                font-size: 25px;
-                font-weight: 550;
-                }
-             .stExpander button > div > p {
-                    white-space: nowrap;
-                }
-                    
-            </style>
-            """, unsafe_allow_html=True)
-        
+
+        # Add the style
+        st.markdown(StepContainer.style, unsafe_allow_html=True)
+
         # Flag added
         self.style_added = True
 
@@ -45,7 +48,7 @@ class StepContainer:
 
         # Create the content in the container
         with container:
-            
+
             # Render the body of the step
             buttons = content_callback()
 
@@ -64,64 +67,52 @@ class StepContainer:
         if hide:
             placeholder.empty()
 
-if __name__ == '__main__':
+def example_usage():
+    """ Example of how the class can be used """
 
     # Define the steps
     steps = ["Step 1", "Step 2", "Step 3", "Step 4", "Step 5"]
 
-    # Option menu at the top of the page
-    current_step = option_menu(
-        menu_title=None,
-        options=steps,
-        icons=['house', 'gear', 'list-task', 'people-fill', 'check-circle-fill'],
-        menu_icon="cast",
-        default_index=2,
-        orientation="horizontal",
-        styles={
-            "container": {"padding": "0!important", "background-color": "#fafafa"},
-            "nav-link": {
-                "font-size": "15px",
-                "text-align": "left",
-                "margin": "0px",
-                "--hover-color": "#eee",
-            }
-                    },
-    )
-
     # Main content
     st.title("Multi-Step Form")
-    
+
+    def render_step_content(step):
+        st.text_input("Enter some text", key=f"edit_{step}")
+        st.selectbox("Choose an option", ["Option 1", "Option 2", "Option 3"], key=f"select_{step}")
+        buttons =  [
+            {
+            "text" : "Noop",
+            "key"   : f"Noop_{step}"
+            },
+            {
+            "text" : "Toast",
+            "key"   : f"toast_{step}",
+            "on_click" : lambda: st.toast('Toast')
+            },
+            {
+            "text" : "Balloons",
+            "key"   : f"balloons_{step}",
+            "on_click" : st.balloons
+            },
+            {
+            "text" : "Snow",
+            "key"   : f"snow_{step}",
+            "on_click" : st.snow
+            }
+        ]
+        return buttons
+
     # Display all steps
     step_container = StepContainer()
     flip_flop = False
     for step in steps:
-        def render_step_content():
-            st.text_input("Enter some text", key=f"edit_{step}")
-            st.selectbox("Choose an option", ["Option 1", "Option 2", "Option 3"], key=f"select_{step}")
-            buttons =  [
-                {
-                "text" : "Noop",
-                "key"   : f"Noop_{step}"
-                },
-                {
-                "text" : "Toast",
-                "key"   : f"toast_{step}",
-                "on_click" : lambda: st.toast('Toast')              
-                },
-                {
-                "text" : "Balloons",
-                "key"   : f"balloons_{step}",
-                "on_click" : lambda: st.balloons()               
-                },
-                {
-                "text" : "Snow",
-                "key"   : f"snow_{step}",
-                "on_click" : lambda: st.snow()
-                }
-            ]
-            return buttons
-        
+
         step_heading = step
         expand = flip_flop
-        step_container.render_step(step_heading, render_step_content, expand, False)
+        step_container.render_step(step_heading, lambda step=step: render_step_content(step), expand, False)
         flip_flop  = not flip_flop
+
+if __name__ == '__main__':
+
+    # run the sample
+    example_usage()

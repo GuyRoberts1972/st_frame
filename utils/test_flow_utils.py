@@ -1,8 +1,6 @@
 # pylint: disable=missing-function-docstring, missing-module-docstring, missing-class-docstring, protected-access
-import test_helper
-test_helper.setup_path()
 import unittest
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 from flow_utils import FlowUtils
 
 
@@ -14,19 +12,27 @@ class TestURLExtraction(unittest.TestCase):
 
     def test_multiple_urls(self):
         text = "Check out http://site1.com and https://site2.org for great content!"
-        self.assertEqual(FlowUtils.extract_urls_from_text(text), ['http://site1.com', 'https://site2.org'])
+        self.assertEqual(
+            FlowUtils.extract_urls_from_text(text),
+            ['http://site1.com', 'https://site2.org'])
 
     def test_url_with_path(self):
         text = "Article link: https://blog.example.com/articles/2023/05/15/ai-advancements"
-        self.assertEqual(FlowUtils.extract_urls_from_text(text), ['https://blog.example.com/articles/2023/05/15/ai-advancements'])
+        self.assertEqual(
+            FlowUtils.extract_urls_from_text(text),
+            ['https://blog.example.com/articles/2023/05/15/ai-advancements'])
 
     def test_url_with_query_params(self):
         text = "Search results: https://search.example.com/results?q=python&page=1"
-        self.assertEqual(FlowUtils.extract_urls_from_text(text), ['https://search.example.com/results?q=python&page=1'])
+        self.assertEqual(
+            FlowUtils.extract_urls_from_text(text),
+            ['https://search.example.com/results?q=python&page=1'])
 
     def test_url_with_special_characters(self):
         text = "Complex URL: https://api.example.com/v2/users/~johndoe/profile+settings"
-        self.assertEqual(FlowUtils.extract_urls_from_text(text), ['https://api.example.com/v2/users/~johndoe/profile+settings'])
+        self.assertEqual(
+            FlowUtils.extract_urls_from_text(text),
+            ['https://api.example.com/v2/users/~johndoe/profile+settings'])
 
     def test_no_urls(self):
         text = "This is a text without any URLs."
@@ -47,8 +53,7 @@ class TestAddContextToPrompt(unittest.TestCase):
     def tearDown(self):
         self.secrets_patcher.stop()
 
-    @patch('flow_utils.TxtGetter')
-    def test_no_urls_or_jira_issues(self, mock_txt_getter):
+    def test_no_urls_or_jira_issues(self):
         prompt = "This is a simple prompt with no URLs or Jira issues."
         result = FlowUtils.add_context_to_prompt(prompt)
         self.assertEqual(result, prompt)
@@ -57,9 +62,9 @@ class TestAddContextToPrompt(unittest.TestCase):
     def test_with_url(self, mock_txt_getter):
         mock_txt_getter.from_url.return_value = "Mocked URL content"
         prompt = "Check this link: https://example.com"
-        expected = prompt + "\n\nContent scraped from web url https://example.com:\nMocked URL content"
+        exp = prompt + "\n\nContent scraped from web url https://example.com:\nMocked URL content"
         result = FlowUtils.add_context_to_prompt(prompt)
-        self.assertEqual(result, expected)
+        self.assertEqual(result, exp)
         mock_txt_getter.from_url.assert_called_once_with("https://example.com")
 
     @patch('flow_utils.TxtGetter')
@@ -68,7 +73,8 @@ class TestAddContextToPrompt(unittest.TestCase):
         prompt = "Check this Confluence page: https://example.atlassian.net/wiki/spaces/TEST"
         result = FlowUtils.add_context_to_prompt(prompt)
         self.assertIn("Mocked Confluence content", result)
-        mock_txt_getter.from_confluence_page.assert_called_once_with("https://example.atlassian.net/wiki/spaces/TEST")
+        called_with = "https://example.atlassian.net/wiki/spaces/TEST"
+        mock_txt_getter.from_confluence_page.assert_called_once_with(called_with)
 
     @patch('flow_utils.TxtGetter')
     def test_with_jira_issue(self, mock_txt_getter):
@@ -107,11 +113,13 @@ class TestAddContextToPrompt(unittest.TestCase):
         mock_txt_getter.from_url.return_value = "Mocked URL content"
         mock_txt_getter.from_confluence_page.return_value = "Mocked Confluence content"
         mock_txt_getter.from_jira_issues.return_value = "Mocked Jira content"
-        prompt = "Check these: https://example.com PROJ1-1234 https://example.atlassian.net/wiki/spaces/TEST PROJ3-5678"
+        prompt = "Check these: https://example.com PROJ1-1234" \
+            + " https://example.atlassian.net/wiki/spaces/TEST PROJ3-5678"
         result = FlowUtils.add_context_to_prompt(prompt)
         self.assertIn("Mocked Jira content", result)
         mock_txt_getter.from_url.assert_called_once_with("https://example.com")
-        mock_txt_getter.from_confluence_page.assert_called_once_with("https://example.atlassian.net/wiki/spaces/TEST")
+        mock_txt_getter.from_confluence_page.assert_called_once_with(
+            "https://example.atlassian.net/wiki/spaces/TEST")
         mock_txt_getter.from_jira_issues.assert_called_once_with("PROJ1-1234 PROJ3-5678")
 
 class TestFlowUtils(unittest.TestCase):

@@ -144,7 +144,7 @@ def main():
     """ Main execution """
 
     # Wide
-    st.set_page_config(layout="wide", page_icon='🚀')
+    st.set_page_config(layout="wide", page_icon='\U0001F680')
 
     # Check if we should display the JSON viewer
     json_viewer = JSONViewer()
@@ -153,7 +153,8 @@ def main():
 
     # Setup state manager - specify state keys to persist
     key_storage_map = { 'persistant' : ['pdata_*'], 'volatile' : ['vdata_*']}
-    state_manager = SideBarStateMgr(key_storage_map)
+    saved_states_dir = st.secrets['paths']['saved_states']
+    state_manager = SideBarStateMgr(key_storage_map, saved_states_dir)
     template_folder = st.secrets["paths"]["use_case_templates"]
     if handle_template_selection(template_folder):
         # Run the app using the YAML

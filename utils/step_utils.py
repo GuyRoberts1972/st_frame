@@ -18,7 +18,7 @@ class BaseFlowApp:
     """ Forward declaration for the base flow app class """
 
 class BaseFlowStep_ack_mgmb(ABC):
-    """ Abstract class to manaage acknowleggment status
+    """ Abstract class to manaage acknowledgement status
     i.e. buttons like confirm and start that have a state
     """
 
@@ -177,15 +177,15 @@ class StepStatus(IntEnum):
     def get_icon(status):
         """ Maps a StepStatus Unicode icon."""
         icon_map = {
-            StepStatus.WAITING: "⏳",
-            StepStatus.ENQUEUED: "⭕",
-            StepStatus.ACTIVE_ACK_START: "🔔",
-            StepStatus.ACTIVE: "▶️",
-            StepStatus.ACTIVE_ACK_CHANGES: "✋",
-            StepStatus.DONE: "✅",
+            StepStatus.WAITING: "\u23F3",  # Hourglass
+            StepStatus.ENQUEUED: "\u2B55",  # Hollow Red Circle
+            StepStatus.ACTIVE_ACK_START: "\U0001F514",  # Bell
+            StepStatus.ACTIVE: "\u25B6\uFE0F",  # Play Button
+            StepStatus.ACTIVE_ACK_CHANGES: "\u270B",  # Raised Hand
+            StepStatus.DONE: "\u2705",  # White Heavy Check Mark
         }
 
-        return icon_map.get(status, "❓")
+        return icon_map.get(status, "\u2753")  # Question Mark for unknown status
 
 class StatusCriteria(Enum):
     """ Enum for all the options criteria that can be matched against a status """

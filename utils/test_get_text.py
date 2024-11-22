@@ -1,6 +1,6 @@
 # pylint: disable=missing-function-docstring, missing-module-docstring, missing-class-docstring, protected-access
 import unittest
-from get_text import TxtGetter, TxtGetterHelpers
+from get_text import TxtGetterHelpers
 
 class TestTxtGetterHelpers(unittest.TestCase):
 
