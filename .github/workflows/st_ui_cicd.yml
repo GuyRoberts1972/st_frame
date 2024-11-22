@@ -82,6 +82,7 @@ jobs:
         docker run -d --name streamlit-test -p 8501:8501 $IMAGE_NAME:${IMAGE_TAG:-latest}
 
         # Smoke test it
+        chmod +x ./st_ui/cicd/run_smoke_test.sh
         ./st_ui/cicd/run_smoke_test.sh
 
     - name: Push Docker Image
@@ -118,6 +119,7 @@ jobs:
         docker run -d --name streamlit-test -p 8501:8501 $IMAGE_NAME:${IMAGE_TAG:-latest}
 
         # Smoke test it
+        chmod +x ./st_ui/cicd/run_smoke_test.sh
         ./st_ui/cicd/run_smoke_test.sh
 
     - name: Cleanup
