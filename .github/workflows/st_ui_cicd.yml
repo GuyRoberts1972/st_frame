@@ -82,7 +82,7 @@ jobs:
         docker run -d --name streamlit-test -p 8501:8501 $IMAGE_NAME:${IMAGE_TAG:-latest}
 
         # Smoke test it
-        ./st_ui/cicd/run_smoke_test
+        ./st_ui/cicd/run_smoke_test.sh
 
     - name: Push Docker Image
       run: |
@@ -118,7 +118,7 @@ jobs:
         docker run -d --name streamlit-test -p 8501:8501 $IMAGE_NAME:${IMAGE_TAG:-latest}
 
         # Smoke test it
-        ./st_ui/cicd/run_smoke_test
+        ./st_ui/cicd/run_smoke_test.sh
 
     - name: Cleanup
       if: always()
