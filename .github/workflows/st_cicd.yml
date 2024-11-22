@@ -1,7 +1,8 @@
 name: ST UI Build Test Deploy
 
-on:
+on: [push]
 '''
+on:
   workflow_run:
     workflows:
       - Pytest

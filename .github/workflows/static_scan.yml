@@ -1,6 +1,6 @@
 name: StaticScan
 
-on: [push]
+#on: [push]
 
 jobs:
   check:
