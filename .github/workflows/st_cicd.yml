@@ -1,6 +1,11 @@
 name: ST UI Build Test Deploy
 
 on:
+  workflow_run:
+    workflows:
+      - Pytest
+    types:
+      - completed
   workflow_dispatch:
 
 permissions:
