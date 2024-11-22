@@ -1,0 +1,128 @@
+name: ST UI Build Test Deploy
+
+on:
+  workflow_run:
+    workflows:
+      - Pytest
+      - Pylint
+      - StaticScan
+    types:
+      - completed
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  build:
+    name: Build Docker Image
+    runs-on: ubuntu-latest
+
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+
+    outputs:
+      image_name: ${{ steps.set-env.outputs.image_name }}
+      image_tag: ${{ steps.set-env.outputs.image_tag }}
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Log in to GitHub Container Registry
+      uses: docker/login-action@v2
+      with:
+        registry: ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Build Docker Image
+      id: build-image
+      run: |
+        IMAGE_NAME=ghcr.io/${{ github.repository_owner }}/${{ github.repository }}
+        TAG=pr-${{ github.run_id }}
+
+        # Build the image
+        docker build -t $IMAGE_NAME:$TAG .
+
+        # Save the image name and tag
+        echo "IMAGE_NAME=$IMAGE_NAME" >> $GITHUB_ENV
+        echo "IMAGE_TAG=$TAG" >> $GITHUB_ENV
+
+    - name: Set Output
+      id: set-env
+      run: |
+        echo "::set-output name=image_name::$IMAGE_NAME"
+        echo "::set-output name=image_tag::$TAG"
+
+  pre-push-smoke-test:
+    name: Pre-Push Smoke Test
+    runs-on: ubuntu-latest
+    needs: build
+
+    steps:
+    - name: Run Docker Container
+      run: |
+        docker run -d --name streamlit-test -p 8501:8501 ${{ needs.build.outputs.image_name }}:${{ needs.build.outputs.image_tag }}
+        sleep 10  # Allow time for the app to start
+
+    - name: Test HTTP Response
+      run: |
+        RESPONSE=$(curl -s http://localhost:8501)
+        echo "$RESPONSE"
+
+        # Check for expected HTTP response and string
+        echo "$RESPONSE" | grep "Streamlit" || exit 1
+        echo "$RESPONSE" | grep "Multi-Step Form" || exit 1
+
+    - name: Cleanup
+      if: always()
+      run: |
+        docker stop streamlit-test
+        docker rm streamlit-test
+
+  push:
+    name: Push Docker Image
+    runs-on: ubuntu-latest
+    needs: pre-push-smoke-test  # Ensures smoke test must pass before push
+
+    steps:
+    - name: Log in to GitHub Container Registry
+      uses: docker/login-action@v2
+      with:
+        registry: ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Push Docker Image
+      run: |
+        docker push ${{ needs.build.outputs.image_name }}:${{ needs.build.outputs.image_tag }}
+
+  post-push-smoke-test:
+    name: Post-Push Smoke Test
+    runs-on: ubuntu-latest
+    needs: push  # Ensures push step must complete successfully
+
+    steps:
+    - name: Pull Docker Image
+      run: |
+        docker pull ${{ needs.build.outputs.image_name }}:${{ needs.build.outputs.image_tag }}
+
+    - name: Run Docker Container
+      run: |
+        docker run -d --name streamlit-test -p 8501:8501 ${{ needs.build.outputs.image_name }}:${{ needs.build.outputs.image_tag }}
+        sleep 10  # Allow time for the app to start
+
+    - name: Test HTTP Response
+      run: |
+        RESPONSE=$(curl -s http://localhost:8501)
+        echo "$RESPONSE"
+
+        # Check for expected HTTP response and string
+        echo "$RESPONSE" | grep "Streamlit" || exit 1
+        echo "$RESPONSE" | grep "Multi-Step Form" || exit 1
+
+    - name: Cleanup
+      if: always()
+      run: |
+        docker stop streamlit-test
+        docker rm streamlit-test
