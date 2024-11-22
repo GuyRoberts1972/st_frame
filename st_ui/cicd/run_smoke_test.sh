@@ -25,6 +25,7 @@ done
 
 # Verify if the app responded correctly
 if ! check_app_response "$RESPONSE"; then
+    echo "$RESPONSE"
     echo "App failed to start within $TIMEOUT seconds."
     exit 1
 fi
