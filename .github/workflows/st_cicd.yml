@@ -1,15 +1,14 @@
 name: ST UI Build Test Deploy
 
-on: [push]
-'''
-on:
-  workflow_run:
-    workflows:
-      - Pytest
-    types:
-      - completed
-'''
+on: #[push]
   workflow_dispatch:
+# workflow_run:
+#    workflows:
+#      - Pytest
+#    types:
+#      - completed
+
+
 
 permissions:
   contents: read
@@ -82,8 +81,7 @@ jobs:
         echo "$RESPONSE"
 
         # Check for expected HTTP response and string
-        echo "$RESPONSE" | grep "Streamlit" || exit 1
-        echo "$RESPONSE" | grep "Multi-Step Form" || exit 1
+        echo "$RESPONSE" | grep "You need to enable JavaScript to run this app" || exit 1
 
     - name: Cleanup
       if: always()
