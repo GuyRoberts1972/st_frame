@@ -62,8 +62,7 @@ jobs:
         fi
 
         # Build the image
-        ls
-        docker build -f ./st_ui/cicd/DockerFile --cache-from $IMAGE_NAME:latest -t $IMAGE_NAME:$IMAGE_TAG .
+        docker build -f ./st_ui/cicd/Dockerfile --cache-from $IMAGE_NAME:latest -t $IMAGE_NAME:$IMAGE_TAG .
 
         # Save to environment variables
         echo "IMAGE_NAME=$IMAGE_NAME" >> $GITHUB_ENV
