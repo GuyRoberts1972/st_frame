@@ -4,8 +4,6 @@ on:
   workflow_run:
     workflows:
       - Pytest
-      - Pylint
-      - StaticScan
     types:
       - completed
   workflow_dispatch:
@@ -39,7 +37,8 @@ jobs:
     - name: Build Docker Image
       id: build-image
       run: |
-        IMAGE_NAME=ghcr.io/${{ github.repository_owner }}/${{ github.repository }}
+        IMAGE_NAME=$(echo "ghcr.io/${{ github.repository_owner }}/${{ github.repository }}/st_frame" | tr '[:upper:]' '[:lower:]')
+
         TAG=pr-${{ github.run_id }}
 
         # Build the image
