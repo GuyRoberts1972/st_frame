@@ -75,7 +75,11 @@ jobs:
     steps:
     - name: Run Docker Container
       run: |
-        docker run -d --name streamlit-test -p 8501:8501 ${{ needs.build.outputs.image_name }}:${{ needs.build.outputs.image_tag }}
+      - name: Run Docker Container
+  run: |
+        IMAGE_NAME=${{ needs.build.outputs.image_name }}
+        IMAGE_TAG=${{ needs.build.outputs.image_tag }}
+        docker run -d --name streamlit-test -p 8501:8501 $IMAGE_NAME:${IMAGE_TAG:-latest}
         sleep 10  # Allow time for the app to start
 
     - name: Test HTTP Response
@@ -107,7 +111,9 @@ jobs:
 
     - name: Push Docker Image
       run: |
-        docker push ${{ needs.build.outputs.image_name }}:${{ needs.build.outputs.image_tag }}
+        IMAGE_NAME=${{ needs.build.outputs.image_name }}
+        IMAGE_TAG=${{ needs.build.outputs.image_tag }}
+        docker push $IMAGE_NAME:${IMAGE_TAG:-latest}
 
   post-push-smoke-test:
     name: Post-Push Smoke Test

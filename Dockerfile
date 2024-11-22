@@ -10,6 +10,7 @@ COPY st_ui ./st_ui
 COPY main.py ./main.py
 
 # Install python dependencies
+RUN pip install --upgrade pip
 RUN pip install --no-cache-dir -r utils/requirements.txt
 RUN pip install --no-cache-dir -r st_ui/requirements.txt
 
