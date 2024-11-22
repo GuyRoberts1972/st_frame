@@ -21,6 +21,10 @@ def load_yaml_file(file_path):
 def get_base_dir():
     """ Get the base directory for the app"""
     base_dir = os.path.dirname(os.path.abspath(__file__))
+    if not base_dir.endswith('st_ui'):
+        err_msg = f"Expecting to run from st_ui directory, running from '{base_dir}'"
+        raise RuntimeError(err_msg)
+    base_dir = os.path.dirname(base_dir)
     return base_dir
 
 def generate_groups(relative_path=""):

@@ -1,4 +1,4 @@
-name: ST UI Build Test Deploy
+name: Streamlit UI Build Test Deploy
 
 on:
   # Manual run
@@ -46,18 +46,23 @@ jobs:
         # Exit on failure
         set -e
 
+        # Image name from provenance - ensure lower case
         IMAGE_NAME=$(echo "ghcr.io/${{ github.repository_owner }}/${{ github.repository }}/st_ui" | tr '[:upper:]' '[:lower:]')
 
+        # Set tag to 'latest' for main, pr on pr or branch name on branch
         if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            # It's a pull request - tag with pr number and run id
             IMAGE_TAG=pr-${{ github.event.pull_request.number }}-${{ github.run_id }}
         elif [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
+            # Its main branch - tag as latest
             IMAGE_TAG=latest
         else
+            # Its on a branch - tag with branch name
             IMAGE_TAG=$(echo "${{ github.ref }}" | sed 's/refs\/heads\///')
         fi
 
         # Build the image
-        docker build --cache-from $IMAGE_NAME:latest -t $IMAGE_NAME:$IMAGE_TAG .
+        docker build -f ./st_ui/cicd/DockerFile --cache-from $IMAGE_NAME:latest -t $IMAGE_NAME:$IMAGE_TAG .
 
         # Save to environment variables
         echo "IMAGE_NAME=$IMAGE_NAME" >> $GITHUB_ENV
@@ -72,25 +77,12 @@ jobs:
 
         # Exit on failure
         set -e
+
         # Run it
         docker run -d --name streamlit-test -p 8501:8501 $IMAGE_NAME:${IMAGE_TAG:-latest}
 
-        # Poll every 1 second for 30 seconds
-        for i in {1..30}; do
-            RESPONSE=$(curl -s http://localhost:8501 || true)
-            if echo "$RESPONSE" | grep -q "You need to enable JavaScript to run this app"; then
-                echo "App started successfully."
-                break
-            fi
-            echo "Waiting for app to start... ($i/30)"
-            sleep 1
-        done
-
-        # Verify if the app responded correctly
-        if ! echo "$RESPONSE" | grep -q "You need to enable JavaScript to run this app"; then
-            echo "App failed to start within 30 seconds."
-            exit 1
-        fi
+        # Smoke test it
+        ./st_ui/cicd/run_smoke_test
 
     - name: Push Docker Image
       run: |
@@ -99,6 +91,8 @@ jobs:
     - name: Cleanup
       if: always()
       run: |
+
+        # Stop and remove container
         docker stop streamlit-test
         docker rm streamlit-test
 
@@ -113,10 +107,23 @@ jobs:
         IMAGE_NAME: ${{ needs.build-test-push.outputs.image_name }}
         IMAGE_TAG: ${{ needs.build-test-push.outputs.image_tag }}
       run: |
+
+        # Exit on failure
+        set -e
+
+        # Pull image
         docker pull $IMAGE_NAME:$IMAGE_TAG
+
+        # Run it
+        docker run -d --name streamlit-test -p 8501:8501 $IMAGE_NAME:${IMAGE_TAG:-latest}
+
+        # Smoke test it
+        ./st_ui/cicd/run_smoke_test
 
     - name: Cleanup
       if: always()
       run: |
+
+        # Stop and remove container
         docker stop streamlit-test
         docker rm streamlit-test
