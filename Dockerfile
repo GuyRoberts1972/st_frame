@@ -5,10 +5,14 @@ FROM python:3.9-slim
 WORKDIR /app
 
 # Copy application code
-# todo: don't do test files
+# todo: delete test_*.py files
 COPY utils ./utils
 COPY st_ui ./st_ui
 COPY main.py ./main.py
+
+# Delete test_*.py files
+RUN find ./utils -type f -name 'test_*.py' -delete && \
+    find ./st_ui -type f -name 'test_*.py' -delete
 
 # Install python dependencies
 RUN pip install --upgrade pip

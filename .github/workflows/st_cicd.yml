@@ -61,11 +61,11 @@ jobs:
 
         # Save to environment variables
         echo "IMAGE_NAME=$IMAGE_NAME" >> $GITHUB_ENV
-        echo "IMAGE_TAG=$TAG" >> $GITHUB_ENV
+        echo "IMAGE_TAG=$IMAGE_TAG" >> $GITHUB_ENV
 
         # Save to job output
         echo "image_name=$IMAGE_NAME" >> $GITHUB_OUTPUT
-        echo "image_tag=$TAG" >> $GITHUB_OUTPUT
+        echo "image_tag=$IMAGE_TAG" >> $GITHUB_OUTPUT
 
     - name: Pre Push Smoke Test
       run: |
@@ -110,10 +110,10 @@ jobs:
     steps:
     - name: Pull Docker Image
       env:
-        IMAGE: ${{ needs.build-test-push.image_name }}
-        TAG: ${{ needs.build-test-push.outputs.image_tag }}
+        IMAGE_NAME: ${{ needs.build-test-push.image_name }}
+        IMAGE_TAG: ${{ needs.build-test-push.outputs.image_tag }}
       run: |
-        docker pull $IMAGE:$TAG
+        docker pull $IMAGE_NAME:$IMAGE_TAG
 
     - name: Cleanup
       if: always()
