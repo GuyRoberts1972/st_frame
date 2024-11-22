@@ -4,8 +4,6 @@ on:
   workflow_run:
     workflows:
       - Pytest
-      - Pylint
-      - StaticScan
     types:
       - completed
   workflow_dispatch:
@@ -36,24 +34,33 @@ jobs:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
 
-    - name: Build Docker Image
+   - name: Build Docker Image
       id: build-image
       run: |
-        IMAGE_NAME=ghcr.io/${{ github.repository_owner }}/${{ github.repository }}
-        TAG=pr-${{ github.run_id }}
+        set -e
+
+        IMAGE_NAME=$(echo "ghcr.io/${{ github.repository_owner }}/${{ github.repository }}/st_frame" | tr '[:upper:]' '[:lower:]')
+
+        if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            TAG=pr-${{ github.event.pull_request.number }}-${{ github.run_id }}
+        elif [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
+            TAG=latest
+        else
+            TAG=$(echo "${{ github.ref }}" | sed 's/refs\/heads\///')
+        fi
 
         # Build the image
-        docker build -t $IMAGE_NAME:$TAG .
+        docker build --cache-from $IMAGE_NAME:latest -t $IMAGE_NAME:$TAG .
 
         # Save the image name and tag
         echo "IMAGE_NAME=$IMAGE_NAME" >> $GITHUB_ENV
         echo "IMAGE_TAG=$TAG" >> $GITHUB_ENV
 
-    - name: Set Output
-      id: set-env
-      run: |
-        echo "::set-output name=image_name::$IMAGE_NAME"
-        echo "::set-output name=image_tag::$TAG"
+        - name: Set Output
+          id: set-env
+          run: |
+            echo "::set-output name=image_name::$IMAGE_NAME"
+            echo "::set-output name=image_tag::$TAG"
 
   pre-push-smoke-test:
     name: Pre-Push Smoke Test
