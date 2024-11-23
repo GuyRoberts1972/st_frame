@@ -9,6 +9,15 @@ RUN python --version
 # Set up the working directory
 WORKDIR /app
 
+# Add the working directory to PYTHONPATH
+ENV PYTHONPATH=/app
+
+# Accept build number and git ref as arguments and set them as environment variables
+ARG GIT_RUN_NUMBER="GIT_RUN_NUMBER"
+ARG GIT_COMMIT_SHA="GIT_COMMIT_SHA"
+ENV GIT_RUN_NUMBER=$GIT_RUN_NUMBER
+ENV GIT_COMMIT_SHA=$COMMIT_SHA
+
 # Copy application code
 COPY utils ./utils
 COPY st_ui ./st_ui
