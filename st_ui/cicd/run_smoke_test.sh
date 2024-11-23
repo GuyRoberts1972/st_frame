@@ -5,6 +5,16 @@ TIMEOUT=10
 CHECK_STRING="You need to enable JavaScript to run this app"
 URL="http://localhost:8501"
 
+# Function to determine if script is running in GitHub Actions
+is_github_actions() {
+  [[ -n "$GITHUB_ACTIONS" ]]
+}
+
+# Set -e only for GitHub Actions
+if is_github_actions; then
+  set -e
+fi
+
 # Function to check if the response contains the required string
 check_app_response() {
     local response=$1
@@ -25,6 +35,7 @@ done
 
 # Verify if the app responded correctly
 if ! check_app_response "$RESPONSE"; then
+    echo "$RESPONSE"
     echo "App failed to start within $TIMEOUT seconds."
     exit 1
 fi

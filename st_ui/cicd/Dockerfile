@@ -9,6 +9,15 @@ RUN python --version
 # Set up the working directory
 WORKDIR /app
 
+# Add the working directory to PYTHONPATH
+ENV PYTHONPATH=/app
+
+# Accept build number and git ref as arguments and set them as environment variables
+ARG GIT_RUN_NUMBER="GIT_RUN_NUMBER"
+ARG GIT_COMMIT_SHA="GIT_COMMIT_SHA"
+ENV GIT_RUN_NUMBER=$GIT_RUN_NUMBER
+ENV GIT_COMMIT_SHA=$GIT_COMMIT_SHA
+
 # Copy application code
 COPY utils ./utils
 COPY st_ui ./st_ui
@@ -22,4 +31,4 @@ RUN pip install --no-cache-dir -r st_ui/requirements.txt
 EXPOSE 8501
 
 # Command to run the Streamlit app
-CMD ["streamlit", "run", "st_ui_app.py", "--server.port=8501", "--server.enableCORS=false"]
+CMD ["streamlit", "run", "./st_ui/app.py", "--server.port=8501", "--server.enableCORS=false"]

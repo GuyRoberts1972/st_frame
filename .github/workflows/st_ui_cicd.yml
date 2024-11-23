@@ -32,6 +32,9 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v3
 
+    - name: Ensure all shell scripts are executable
+      run: find . -type f -name "*.sh" -exec chmod +x {} \;
+
     - name: Log in to GitHub Container Registry
       uses: docker/login-action@v2
       with:
@@ -41,48 +44,14 @@ jobs:
 
     - name: Build Docker Image
       id: build-image
-      run: |
-
-        # Exit on failure
-        set -e
-
-        # Image name from provenance - ensure lower case
-        IMAGE_NAME=$(echo "ghcr.io/${{ github.repository_owner }}/${{ github.repository }}/st_ui" | tr '[:upper:]' '[:lower:]')
-
-        # Set tag to 'latest' for main, pr on pr or branch name on branch
-        if [[ "${{ github.event_name }}" == "pull_request" ]]; then
-            # It's a pull request - tag with pr number and run id
-            IMAGE_TAG=pr-${{ github.event.pull_request.number }}-${{ github.run_id }}
-        elif [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
-            # Its main branch - tag as latest
-            IMAGE_TAG=latest
-        else
-            # Its on a branch - tag with branch name
-            IMAGE_TAG=$(echo "${{ github.ref }}" | sed 's/refs\/heads\///')
-        fi
-
-        # Build the image
-        docker build -f ./st_ui/cicd/DockerFile --cache-from $IMAGE_NAME:latest -t $IMAGE_NAME:$IMAGE_TAG .
-
-        # Save to environment variables
-        echo "IMAGE_NAME=$IMAGE_NAME" >> $GITHUB_ENV
-        echo "IMAGE_TAG=$IMAGE_TAG" >> $GITHUB_ENV
-
-        # Save to job output
-        echo "image_name=$IMAGE_NAME" >> $GITHUB_OUTPUT
-        echo "image_tag=$IMAGE_TAG" >> $GITHUB_OUTPUT
+      run: ./st_ui/cicd/build_docker.sh
 
     - name: Pre Push Smoke Test
       run: |
 
-        # Exit on failure
-        set -e
-
-        # Run it
-        docker run -d --name streamlit-test -p 8501:8501 $IMAGE_NAME:${IMAGE_TAG:-latest}
-
-        # Smoke test it
-        ./st_ui/cicd/run_smoke_test
+        # Setup, test
+        ./st_ui/cicd/setup_test_instance.sh
+        ./st_ui/cicd/run_smoke_test.sh
 
     - name: Push Docker Image
       run: |
@@ -90,11 +59,7 @@ jobs:
 
     - name: Cleanup
       if: always()
-      run: |
-
-        # Stop and remove container
-        docker stop streamlit-test
-        docker rm streamlit-test
+      run: ./st_ui/cicd/teardown_test_instance.sh
 
   post-push-smoke-test:
     name: Post-Push Smoke Test
@@ -102,6 +67,12 @@ jobs:
     needs: build-test-push
 
     steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Ensure all shell scripts are executable
+      run: find . -type f -name "*.sh" -exec chmod +x {} \;
+
     - name: Pull Docker Image
       env:
         IMAGE_NAME: ${{ needs.build-test-push.outputs.image_name }}
@@ -114,16 +85,7 @@ jobs:
         # Pull image
         docker pull $IMAGE_NAME:$IMAGE_TAG
 
-        # Run it
-        docker run -d --name streamlit-test -p 8501:8501 $IMAGE_NAME:${IMAGE_TAG:-latest}
-
-        # Smoke test it
-        ./st_ui/cicd/run_smoke_test
-
-    - name: Cleanup
-      if: always()
-      run: |
-
-        # Stop and remove container
-        docker stop streamlit-test
-        docker rm streamlit-test
+        # Setup, test, teardown
+        ./st_ui/cicd/setup_test_instance.sh
+        ./st_ui/cicd/run_smoke_test.sh
+        ./st_ui/cicd/teardown_test_instance.sh
