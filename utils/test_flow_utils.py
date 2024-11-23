@@ -1,7 +1,7 @@
 # pylint: disable=missing-function-docstring, missing-module-docstring, missing-class-docstring, protected-access
 import unittest
 from unittest.mock import patch
-from flow_utils import FlowUtils
+from utils.flow_utils import FlowUtils
 
 
 class TestURLExtraction(unittest.TestCase):
