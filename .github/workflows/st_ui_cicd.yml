@@ -83,4 +83,3 @@ jobs:
         ./st_ui/cicd/setup_test_instance.sh
         ./st_ui/cicd/run_smoke_test.sh
         ./st_ui/cicd/teardown_test_instance.sh
-

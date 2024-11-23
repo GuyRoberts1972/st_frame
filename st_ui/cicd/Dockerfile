@@ -22,4 +22,4 @@ RUN pip install --no-cache-dir -r st_ui/requirements.txt
 EXPOSE 8501
 
 # Command to run the Streamlit app
-CMD ["streamlit", "run", "app.py", "--server.port=8501", "--server.enableCORS=false"]
+CMD ["streamlit", "run", "./st_ui/app.py", "--server.port=8501", "--server.enableCORS=false"]
