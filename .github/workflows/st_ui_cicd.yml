@@ -67,6 +67,12 @@ jobs:
     needs: build-test-push
 
     steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Ensure all shell scripts are executable
+      run: find . -type f -name "*.sh" -exec chmod +x {} \;
+
     - name: Pull Docker Image
       env:
         IMAGE_NAME: ${{ needs.build-test-push.outputs.image_name }}
