@@ -6,6 +6,7 @@ import shutil
 import streamlit as st
 from streamlit_option_menu import option_menu
 from st_ui.json_viewer import JSONViewer
+import logging
 
 class SideBarStateMgr:
     """ Main class to render side nav bar and manage state switches """
@@ -29,6 +30,25 @@ class SideBarStateMgr:
         'DEFAULT_STATE': 'default'
     }
 
+    def __init__(self, key_storage_map, saved_states_dir):
+
+        # Store
+        self.saved_states_dir = saved_states_dir
+        self.key_storage_map = key_storage_map
+
+        # Handle state loading at the beginning of the script
+        if 'sbsm_state_to_load' in st.session_state:
+            self.load_session_from_state(st.session_state.sbsm_state_to_load)
+            del st.session_state.sbsm_state_to_load
+
+        if 'sbsm_current_state' not in st.session_state:
+            st.session_state.sbsm_current_state = None
+
+        if 'sbsm_renaming_state' not in st.session_state:
+            st.session_state.sbsm_renaming_state = None
+
+        # Setup the side bar
+        self.setup_sidebar()
 
     @staticmethod
     def key_matches_patterns(key, patterns):
@@ -75,13 +95,12 @@ class SideBarStateMgr:
 
         if not os.path.exists(self.saved_states_dir):
             os.makedirs(self.saved_states_dir)
-
         return self.saved_states_dir
 
     def get_state_path(self, name):
         """ Get the path to store the state with the given name """
-        return os.path.join(self.get_cur_saved_states_dir(), f"{name}.json")
-
+        state_path = os.path.join(self.get_cur_saved_states_dir(), f"{name}.json")
+        return state_path
 
     def save_state(self, name, key_storage_map):
         """ Save the current state to the name """
@@ -470,25 +489,7 @@ class SideBarStateMgr:
         """ Get the name of the current state - or return a default """
         return st.session_state.get('sbsm_current_state', default)
 
-    def __init__(self, key_storage_map, saved_states_dir):
 
-        # Store
-        self.saved_states_dir = saved_states_dir
-        self.key_storage_map = key_storage_map
-
-        # Handle state loading at the beginning of the script
-        if 'sbsm_state_to_load' in st.session_state:
-            self.load_session_from_state(st.session_state.sbsm_state_to_load)
-            del st.session_state.sbsm_state_to_load
-
-        if 'sbsm_current_state' not in st.session_state:
-            st.session_state.sbsm_current_state = None
-
-        if 'sbsm_renaming_state' not in st.session_state:
-            st.session_state.sbsm_renaming_state = None
-
-        # Setup the side bar
-        self.setup_sidebar()
 
 def example_usage():
     """ Function to illustrate usage """

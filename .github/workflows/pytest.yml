@@ -1,7 +1,20 @@
 name: Pytest
 
-on: #[push]
+on:
+
+  # Allow manual triggers
   workflow_dispatch:
+
+  # Run only on pushes to the main branch (direct or via merge)
+  push:
+    branches:
+      - main
+
+  # Trigger on PR creation or updates targeting any branch
+  pull_request:
+    branches:
+      - "**"
+
 jobs:
   test:
     runs-on: ubuntu-latest

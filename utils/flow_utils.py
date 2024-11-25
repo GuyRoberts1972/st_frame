@@ -6,7 +6,9 @@ import hashlib
 import re
 from urllib.parse import urlparse
 import streamlit as st
-from utils.get_text import TxtGetter
+from utils.get_text import TxtGetter, TxtGetterHelpers
+from utils.config_utils import ConfigStore
+
 
 class FlowUtils:
     """ Static utility methods for flows """
@@ -81,7 +83,7 @@ class FlowUtils:
                 value_path = token_map[token]
                 value = FlowUtils.nested_get(value_dict, value_path)
                 if value is None:
-                    raise Exception(f'could not find {value_path}')
+                    raise KeyError(f'could not find {value_path}')
                 # Remove the token from the set of original tokens
                 original_tokens.discard(token)
                 # Escape any curly brackets in the replacement value
@@ -92,7 +94,7 @@ class FlowUtils:
 
         # Check if there are any unreplaced tokens
         if original_tokens:
-            raise Exception(f"The following tokens were not replaced: {', '.join(original_tokens)}")
+            raise KeyError(f"The following tokens were not replaced: {', '.join(original_tokens)}")
 
         return result
 
@@ -121,13 +123,25 @@ class FlowUtils:
         # Extract the urls with a regex
         urls = FlowUtils.extract_urls_from_text(human_prompt)
 
-        # Extract the jira issues using regex - put in set to dedupe
-        project_list = st.secrets['atlassian']['jira_project_list'].split(',')
-        jira_regex = r'\b(?:' + '|'.join(proj.strip() for proj in project_list) + r')-\d+\b'
-        jira_issues = set(re.findall(jira_regex, human_prompt))
+        # Extract the jira issues using regex
+        jira_regex = None
+        jira_issues = []
+        project_list = ConfigStore.nested_get(
+            nested_key='atlassian.jira_project_list',
+            default_value='',
+            default_log_msg='skipping jira project prompt context'
+            )
+        project_list = TxtGetterHelpers.split_string(project_list)
+        if len(project_list) > 0:
+            jira_regex = r'\b(?:' + '|'.join(proj.strip() for proj in project_list) + r')-\d+\b'
+            jira_issues = set(re.findall(jira_regex, human_prompt))
 
         # Get the base jira URL so we can spot urls to confluence / JIRA
-        jira_url = st.secrets['atlassian']['jira_url']
+        jira_url = ConfigStore.nested_get(
+            nested_key='atlassian.jira_url',
+            default_value=None,
+            default_log_msg='skipping atlassian url prompt context augmentation'
+            )
 
         # Loop on urls
         url_contents = []
@@ -136,11 +150,12 @@ class FlowUtils:
             parsed_url = urlparse(url)
 
             # See if it is a wiki or jira issues link
-            if parsed_url.netloc == urlparse(jira_url).netloc:
+            if jira_url is not None and parsed_url.netloc == urlparse(jira_url).netloc:
                 if parsed_url.path.startswith('/browse'):
 
                     # Jira issue - extract from path and add to set
-                    jira_issues = jira_issues | set(re.findall(jira_regex, parsed_url.path))
+                    if jira_regex is not None:
+                        jira_issues = jira_issues | set(re.findall(jira_regex, parsed_url.path))
                 else:
                     # Confluence
                     content = TxtGetter.from_confluence_page(url)

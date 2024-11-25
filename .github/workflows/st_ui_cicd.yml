@@ -1,6 +1,7 @@
 name: Streamlit UI Build Test Deploy
 
 on:
+
   # Manual run
   workflow_dispatch:
 

@@ -1,7 +1,7 @@
 # pylint: disable=missing-function-docstring, missing-module-docstring, missing-class-docstring, protected-access
 import unittest
 from unittest.mock import patch
-from flow_utils import FlowUtils
+from utils.flow_utils import FlowUtils
 
 
 class TestURLExtraction(unittest.TestCase):
@@ -42,12 +42,23 @@ class TestURLExtraction(unittest.TestCase):
 class TestAddContextToPrompt(unittest.TestCase):
 
     def setUp(self):
-        self.secrets_patcher = patch('flow_utils.st.secrets', new={
+
+        def patched_nested_get(nested_key, **kwargs):
+            """ Mock implementation of flow_utils.ConfigStore.nested_get """
+
+            mocked_config = {
             'atlassian': {
-                'jira_project_list': 'PROJ1,PROJ2,PROJ3',
-                'jira_url': 'https://example.atlassian.net'
+                'api_token' : 'test_api_token',
+                'email' : 'test@email.com',
+                'jira_url': 'https://example.atlassian.net',
+                'jira_api_endpoint' : "/test/jira/endpoint",
+                'jira_project_list': 'PROJ1,PROJ2,PROJ3'
+                }
             }
-        })
+            return FlowUtils.nested_get(mocked_config, nested_key)
+
+        # Create the patcher and start
+        self.secrets_patcher = patch('flow_utils.ConfigStore.nested_get', patched_nested_get)
         self.mock_secrets = self.secrets_patcher.start()
 
     def tearDown(self):
@@ -58,7 +69,7 @@ class TestAddContextToPrompt(unittest.TestCase):
         result = FlowUtils.add_context_to_prompt(prompt)
         self.assertEqual(result, prompt)
 
-    @patch('flow_utils.TxtGetter')
+    @patch('utils.flow_utils.TxtGetter')
     def test_with_url(self, mock_txt_getter):
         mock_txt_getter.from_url.return_value = "Mocked URL content"
         prompt = "Check this link: https://example.com"
@@ -67,7 +78,7 @@ class TestAddContextToPrompt(unittest.TestCase):
         self.assertEqual(result, exp)
         mock_txt_getter.from_url.assert_called_once_with("https://example.com")
 
-    @patch('flow_utils.TxtGetter')
+    @patch('utils.flow_utils.TxtGetter')
     def test_with_confluence_url(self, mock_txt_getter):
         mock_txt_getter.from_confluence_page.return_value = "Mocked Confluence content"
         prompt = "Check this Confluence page: https://example.atlassian.net/wiki/spaces/TEST"
@@ -76,7 +87,7 @@ class TestAddContextToPrompt(unittest.TestCase):
         called_with = "https://example.atlassian.net/wiki/spaces/TEST"
         mock_txt_getter.from_confluence_page.assert_called_once_with(called_with)
 
-    @patch('flow_utils.TxtGetter')
+    @patch('utils.flow_utils.TxtGetter')
     def test_with_jira_issue(self, mock_txt_getter):
         mock_txt_getter.from_jira_issues.return_value = "Mocked Jira content"
         prompt = "Check this Jira issue: PROJ1-1234"
@@ -84,7 +95,7 @@ class TestAddContextToPrompt(unittest.TestCase):
         self.assertIn("Mocked Jira content", result)
         mock_txt_getter.from_jira_issues.assert_called_once_with("PROJ1-1234")
 
-    @patch('flow_utils.TxtGetter')
+    @patch('utils.flow_utils.TxtGetter')
     def test_with_jira_issue_and_trailing_char(self, mock_txt_getter):
         mock_txt_getter.from_jira_issues.return_value = "Mocked Jira content"
         prompt = "Check this Jira issue with a bracket on the end : PROJ1-1234: "
@@ -92,7 +103,7 @@ class TestAddContextToPrompt(unittest.TestCase):
         self.assertIn("Mocked Jira content", result)
         mock_txt_getter.from_jira_issues.assert_called_once_with("PROJ1-1234")
 
-    @patch('flow_utils.TxtGetter')
+    @patch('utils.flow_utils.TxtGetter')
     def test_with_jira_url(self, mock_txt_getter):
         mock_txt_getter.from_jira_issues.return_value = "Mocked Jira content"
         prompt = "Check this Jira issue: https://example.atlassian.net/browse/PROJ2-5678"
@@ -100,7 +111,7 @@ class TestAddContextToPrompt(unittest.TestCase):
         self.assertIn("Mocked Jira content", result)
         mock_txt_getter.from_jira_issues.assert_called_once_with("PROJ2-5678")
 
-    @patch('flow_utils.TxtGetter')
+    @patch('utils.flow_utils.TxtGetter')
     def test_with_jira_url_trailingchar(self, mock_txt_getter):
         mock_txt_getter.from_jira_issues.return_value = "Mocked Jira content"
         prompt = "Check this Jira issue: https://example.atlassian.net/browse/PROJ2-5678:"
@@ -108,7 +119,7 @@ class TestAddContextToPrompt(unittest.TestCase):
         self.assertIn("Mocked Jira content", result)
         mock_txt_getter.from_jira_issues.assert_called_once_with("PROJ2-5678")
 
-    @patch('flow_utils.TxtGetter')
+    @patch('utils.flow_utils.TxtGetter')
     def test_with_multiple_urls_and_issues(self, mock_txt_getter):
         mock_txt_getter.from_url.return_value = "Mocked URL content"
         mock_txt_getter.from_confluence_page.return_value = "Mocked Confluence content"

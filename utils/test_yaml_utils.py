@@ -3,7 +3,7 @@ import os
 import tempfile
 import shutil
 import unittest
-from yaml_utils import YAMLUtils, YAMLKeyResolver
+from utils.yaml_utils import YAMLUtils, YAMLKeyResolver
 
 class TestMergeNested(unittest.TestCase):
 

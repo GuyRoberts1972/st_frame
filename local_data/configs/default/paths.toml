@@ -1,0 +1,3 @@
+saved_states = "local_data/data/saved_states"
+use_case_templates = "local_data/data/use_case_templates"
+templates_include_lib = "local_data/data/templates_include_lib"
