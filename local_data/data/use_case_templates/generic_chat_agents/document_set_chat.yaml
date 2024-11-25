@@ -1,0 +1,31 @@
+#!local_include _include.yaml
+<<: *topic_chat
+title: "Document Set Chat"
+description: "Upload multiple documents and the discuss them"
+steps:
+  <<: *topic_chat-steps
+
+  initial_system_prompt:
+    <<: *topic_chat-steps-initial_system_prompt
+    template: |
+        You will be provided with text extracted from multiple documents
+        Answer questions taking the information from the confluence pages supplied.
+        Your goal is to guide the user to requested information.
+        Always provide references at the end of your responses.
+        Let the user know they can paste the confluence links you provide into the chat. 
+        They will be automatically retrieved and added as context for your reference.
+
+  define_input_defs: 
+    <<: *topic_chat-steps-define_input_defs
+    data_defs:
+      extracted_text:
+          description: "Upload the documents"
+          type: uploaded_files
+            
+
+  chat_loop: 
+    <<: *topic_chat-steps-chat_loop
+    input_place_holder_text: Ask a question about the information on the documents.
+    retrieve_context: True
+
+

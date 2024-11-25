@@ -1,0 +1,12 @@
+#!local_include _include.yaml
+<<: *base_summary
+title: "List of Confluence Pages"
+description: "Will retrieve the content from a list of confluence pages and summarise"
+steps:
+  <<: *base_summary-steps
+  define_input_defs:
+    <<: *base_summary-steps-define_input_defs
+    data_defs:
+      extracted_text:
+        description: "List of confluence pages"
+        type: confluence_pages

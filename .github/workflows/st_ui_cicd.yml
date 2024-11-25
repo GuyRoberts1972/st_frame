@@ -51,7 +51,7 @@ jobs:
       run: |
 
         # Setup, test
-        ./st_ui/cicd/setup_test_instance.sh
+        ./st_ui/cicd/setup_smoke_test_instance.sh
         ./st_ui/cicd/run_smoke_test.sh
 
     - name: Push Docker Image
@@ -60,7 +60,7 @@ jobs:
 
     - name: Cleanup
       if: always()
-      run: ./st_ui/cicd/teardown_test_instance.sh
+      run: ./st_ui/cicd/teardown_smoke_test_instance.sh
 
   post-push-smoke-test:
     name: Post-Push Smoke Test
@@ -87,6 +87,6 @@ jobs:
         docker pull $IMAGE_NAME:$IMAGE_TAG
 
         # Setup, test, teardown
-        ./st_ui/cicd/setup_test_instance.sh
+        ./st_ui/cicd/setup_smoke_test_instance.sh
         ./st_ui/cicd/run_smoke_test.sh
-        ./st_ui/cicd/teardown_test_instance.sh
+        ./st_ui/cicd/teardown_smoke_test_instance.sh

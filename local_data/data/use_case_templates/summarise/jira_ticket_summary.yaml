@@ -1,0 +1,12 @@
+#!local_include _include.yaml
+<<: *base_summary
+title: "List of JIRA Tickets"
+description: "Will retrieve the details of a list of JIRA tickets and summarise"
+steps:
+  <<: *base_summary-steps
+  define_input_defs:
+    <<: *base_summary-steps-define_input_defs
+    data_defs:
+      extracted_text:
+        description: "List of JIRA tickets"
+        type: jira_issues

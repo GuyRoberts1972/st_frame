@@ -1,0 +1,41 @@
+title: "Single Chat"
+description: "Hide all preperation steps and present a single chat"
+enabled: True
+flow_app: "SummaryFlowApp"
+step_options:
+    visibility: anyActive
+    status_description_visibility: waitingEnqueuedAndAckOnly
+steps:
+
+    choose_llm:
+        heading: Choose the LLM
+        class: ChooseLLMFlavour
+
+    initial_system_prompt:
+        heading: Set ground rules for chat bot
+        class: FormatPromptStep
+        template: |
+            You are an assistant that will interact with a human and provide guidance.
+    
+    initial_human_prompt:
+        heading: Set persona and context
+        class: FormatPromptStep
+        template: |
+            Chat with me about any topics. Briefly introduce yourself and succintly list some topics you can chat about.
+
+    chat_loop:
+        heading: Chat
+        class: ChatLoopStep
+        retrieve_context: True
+        input_place_holder_text: Ask a question.
+        depends_on:
+            initial_system_prompt: initial_system_prompt
+            initial_human_prompt: initial_human_prompt
+            chat_model_choice: choose_llm
+        step_options:
+            visibility: always
+            btn_reset: Clear|Clear and restart this step
+            btn_view_json: View JSON|View the step state in JSON
+
+            
+            

@@ -1,6 +1,9 @@
 
-# Data files
-data/
+# Data files (root only)
+/data/
+
+# Saved states in local data
+/local_data/data/saved_states
 
 # POC
 poc/
