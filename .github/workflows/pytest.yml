@@ -1,5 +1,7 @@
 name: Pytest
 
+on:
+
   # Allow manual triggers
   workflow_dispatch:
 
