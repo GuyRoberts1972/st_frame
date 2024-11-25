@@ -26,15 +26,31 @@ ENV GIT_COMMIT_SHA=$GIT_COMMIT_SHA
 
 # Copy application code
 COPY utils ./utils
+COPY flow_apps ./flow_apps
 COPY st_ui ./st_ui
+
+# Copy local data
+COPY local_data ./local_data
+
+# Create user
+RUN useradd -m appuser
+
+# Set permissions for local_data
+# - Give read-only access to everything in /app/local_data/*
+# - Empty /app/local_data/data if it exists; otherwise create it
+RUN chown -R root:root /app/local_data && \
+    chmod -R 755 /app/local_data && \
+    mkdir -p /app/local_data/data/saved_states && \
+    rm -rf /app/local_data/data/saved_states* && \
+    chown appuser:appuser /app/local_data/data && \
+    chmod 775 /app/local_data/data
 
 # Install Python dependencies
 RUN pip install --upgrade pip && \
     pip install --no-cache-dir -r utils/requirements.txt && \
     pip install --no-cache-dir -r st_ui/requirements.txt
 
-# Create and switch to a non-root user
-RUN useradd -m appuser
+# Switch to a non-root user
 USER appuser
 
 # Expose Streamlit default port

@@ -7,24 +7,24 @@ from st_ui.side_bar_state_mgr import SideBarStateMgr
 from st_ui.option_selector import OptionSelector
 from st_ui.json_viewer import JSONViewer
 from utils.yaml_utils import YAMLUtils
+from utils.config_utils import ConfigStore
 
 
 def load_yaml_file(file_path):
     """ Load the YAML with includes and ref resolution """
 
     base_dir = get_base_dir()
-    include_lib_path = os.path.join(base_dir, st.secrets['paths']['templates_include_lib'])
+
+    # Existing usage
+    templates_include_lib = ConfigStore.nested_get('paths.templates_include_lib')
+    include_lib_path = os.path.join(base_dir, templates_include_lib)
     include_lib_path = os.path.normpath(include_lib_path)
     data = YAMLUtils.load_yaml(file_path, include_lib_path)
     return data
 
 def get_base_dir():
     """ Get the base directory for the app"""
-    base_dir = os.path.dirname(os.path.abspath(__file__))
-    if not base_dir.endswith('st_ui'):
-        err_msg = f"Expecting to run from st_ui directory, running from '{base_dir}'"
-        raise RuntimeError(err_msg)
-    base_dir = os.path.dirname(base_dir)
+    base_dir = os.getcwd()
     return base_dir
 
 def generate_groups(relative_path=""):
@@ -157,9 +157,9 @@ def main():
 
     # Setup state manager - specify state keys to persist
     key_storage_map = { 'persistant' : ['pdata_*'], 'volatile' : ['vdata_*']}
-    saved_states_dir = st.secrets['paths']['saved_states']
+    saved_states_dir = ConfigStore.nested_get('paths.saved_states')
     state_manager = SideBarStateMgr(key_storage_map, saved_states_dir)
-    template_folder = st.secrets["paths"]["use_case_templates"]
+    template_folder = ConfigStore.nested_get('paths.use_case_templates')
     if handle_template_selection(template_folder):
         # Run the app using the YAML
         try:

@@ -1,7 +1,13 @@
 name: StaticScan
 
-on: #[push]
+on:
+  # Manual run
   workflow_dispatch:
+
+  # Run pushes to all branches
+  push:
+    branches:
+      - "**"
 
 jobs:
   check:

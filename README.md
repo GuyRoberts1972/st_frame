@@ -4,21 +4,56 @@
 [![CodeQL](https://github.com/GuyRoberts1972/st_frame/actions/workflows/github-code-scanning/codeql/badge.svg)](https://github.com/GuyRoberts1972/st_frame/actions/workflows/github-code-scanning/codeql)
 
 # About
-A set of tools for prompt templates and flows.
+A set of tools for managing and using templated prompt flows across different data sources and models.
 
-# Configuration and secrets
-by default stored in /st_frame/config
-overide with PARAM_STORE_PATH'
+# Why
+Privacy. Choice. Customisaation. Specific domain and tribal knowledge.
 
-# Prompt Flow Templates
-For common logic flow, extensible format for customisation
+# Features
+- Extensible template libray from which flows can be created and customised
+- Connectivity to atlasssian JIRA & Confluence (todo: s3, Office, Github)
+- Document upload support for common docs (PDF, PPT, DOC, XLS, CSV)
+- Prompt flow sessions. Create, duplicate, run reset, export JSON.
+- todo: Publish and share flows for others to use via UI or API.
 
-# Prompt Flow
+# Key Concepts
+
+## Prompt Flow Templates
+Definitions of common patterns that bring data sources, user input, LLM models and (todo: actions)
+Extensible format for customisation using YAML Actiosn and Anchors and a custom reference key words
+
+## Prompt Flow
 An instanciation of a template.
-Has a series of steps each with its state and depedences
+Has a series of steps each with an input, state and an putput.
+Create, manage and interact with flows via the UI (todo: and API)
 
-# Streamlit UI
-A UI create and manage flows from templates
+## Connections
+Driven through the configuration, allow connection to data sources.
 
-# API
-An API to access and use flows
+# Main Components
+These are published to the GitHub container registry.
+Various intallation options.
+
+## Streamlit UI
+A UI create and manage flows from templates.
+
+## API
+Todo: An API to access and use flows.
+
+# Installation
+
+## Containers
+Published in
+
+## Infrastructure as code
+Ready to use reference implementations
+- todo: CDK scripts to deploy as AWS ECS
+
+## Configuration
+Custom configuration covers:
+- Prompt Template Library
+- State Storage Location
+- Connectivity Secrets
+- Model Library - the flavours of LLMs that can be used
+
+Specified at deploy time as a pointer to an AWS SSM param store path.

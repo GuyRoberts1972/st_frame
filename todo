@@ -1,19 +1,19 @@
 
-# Step Framework 
- - Add stored data branching 
+# Step Framework
+ - Add stored data branching
 
 # App Features
  - [ ] Permalink Prepared Chat, Publish a shared chat on a permalink, No nav bar, locked down.
  - [ ] Daemone mode - run on a schedule in the back ground, maybe as a step function
  - [ ] Take out put from other flows
  - [ ] flows can have branching (tabs) .. i.e. different drafts like gemini
- - [ ] non linear flows - can have loops 
+ - [ ] non linear flows - can have loops
 
 # UI Clean up
- - clean up all icons
- - clean up all strings
- - Flow page clean up
-  [ ] Top title should be the name, then flow template, then flow type (summary). Created, updated, owner?
+ - [ ] Clean up all icons
+ - [ ] Clean up all strings
+ - [ ] Flow page clean up
+ - [ ] Top title should be the name, then flow template, then flow type (summary). Created, updated, owner?
 
 # Steps
  - [ ] Separate out UI Render from doing the work to support non streamlit UI in future
@@ -22,8 +22,8 @@
         [x] default value handling for data input def step
         [x] steps become read only when done
         [x] get data step needs to check if data already recieved
-        [ ] use enums for status and other items
-    - features
+        [x] use enums for status and other items
+    - UI features
         - layout
             [ ] tiled layout
             [ ] add icons and tool tips for state heading
@@ -32,64 +32,95 @@
             [ ] have a 'greyed' visibility that shows future steps in an a disabled manor
         - actions
             [ ] 'reset from here'  action  all subsequent steps
-            [ ] 'rerun from here'  action  all subsequent steps
+            [x] 'rerun from here'  action  all subsequent steps
             [ ] 'dismiss' to hide the step
             [ ] Top level flow actions (e.g. reset all, undismiss, reset stale)
-        - acknowledgement 
+        - acknowledgement
             [ ] add a cancel or set to default on ack changes
-            [ ] split ack chnages into ack default and ack changes 
-        - step state 
+            [ ] split ack chnages into ack default and ack changes
+        - step state
             [ ] staleness - show where steps have up stream dependecies that are fresher
-    
+
      - button options
-        - [x] hierarchycal for each button type,  boolean, button name and hover text 
-        - [x] if enabled button shown depdending on status and function 
+        - [x] hierarchycal for each button type,  boolean, button name and hover text
+        - [x] if enabled button shown depdending on status and function
         - [x] ack buttons create sub states of ACTIVE
         - [x] default implementations to show ack messages
-        - [x] do functions know about aknowldgement for message 
+        - [x] do functions know about aknowldgement for message
         - [x] info buttons - dont affect state just provide more info
-        - [x] change buttons reset state 
+        - [x] change buttons reset state
 
      - step options
         - [x] visibility
         - [x] expandability
         - [x] generic state descriptions
-    
+
+# API
+- Expose flow management and interation
+
+# Docs
+- pdoc script
+- github pages
+- swagger for API
+- auto generate key concepts with keyword search
+- look at pyreverse for module and class dependencies
+
 # CICD
  - GitHub Actions
- - Unit test & coverage
- - PyPi publish 
- - Deploy to AWS
+    - [@] Unit test & coverage
+    - [@] Pylint
+    - [@] container build & publish
+    - [ ] Smoke Test
+        - [ ] minimum smoke config
+    - [ ] repeat for API
 
-# User Authentication 
+ - Component split out
+    - [ ] s3 support for state
+        - [ ] make sure local data paths are handled securely
+    - [ ] move existing to state and templates to s3
+    - [ ] move model library to config
+    - [ ] add github support for templates
+    - [ ] default config point to local, minimal functionality and guide user to setup
+    - [ ] smoke config point to local, mimimal functionality allow smoke test
+
+ - Infrastructure as code
+
+    - [ ] AWS ECS support
+    - [ ] EAA style security group config
+
+# User Authentication
  - Azure AD
  - Cognito
 
 # State Manager
- - storage 
+ - storage
   - storage in s3
   - shared storage between users
   - different storage user
-  - folder navigation 
+  - folder navigation
 
 # Templates
  - Editor
  - [x] Anchors and aliases
  - [ ] Custom merging based on jpath syntax
 
-# Retrievers
+# Connectors.Getters
  [x] confluence
- [ ] microsoft graph
- [ ] web page scrapers
+ [ ] microsoft graph / share point
+ [x] web page scrapers
  [ ] web download documents
- [ ] JIRA tickets
+ [x] JIRA tickets
+ [ ] DB query step to get data
 
- # exporters
+ # Connectors.Exporters
  [ ] confluence
  [ ] jira
- [ ] download docs
- [ ] share point 
+ [ ] web post
+ [ ] microsoft graph / share point
+ [ ] DB query step to get data
+ [ ] Doc templates (e.g. PPT)
 
 # Steps
- [ ] - Add a DB query step to get data 
- [ ] - Add a matplotlib step to render data 
+
+ [ ] Matplotlib step to render data
+ [ ] markdown flow diagrams

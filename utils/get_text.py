@@ -15,7 +15,8 @@ from atlassian import Confluence
 from pptx import Presentation
 import pandas as pd
 from requests.auth import HTTPBasicAuth
-import streamlit as st
+from utils.config_utils import ConfigStore
+
 
 class TxtGetterHelpers:
     """ helpers """
@@ -250,11 +251,10 @@ class TxtGetter:
         issue_key = issue_key.strip()
 
         #  Get secrets
-        secrets = st.secrets['atlassian']
-        jira_url = secrets['jira_url']
-        jira_api_endpoint = secrets['jira_api_endpoint']
-        email = secrets['email']
-        api_token = secrets['api_token']
+        jira_api_endpoint = ConfigStore.nested_get('atlassian.jira_api_endpoint')
+        api_token = ConfigStore.nested_get('atlassian.api_token')
+        email = ConfigStore.nested_get('atlassian.email')
+        jira_url = ConfigStore.nested_get('atlassian.jira_url')
 
         def handle_error(response, issue_key):
             ''' Raise exception on HTTP not ok '''
@@ -374,9 +374,6 @@ class TxtGetter:
     def from_jql_query(jql_query, page_size=50, max_results=100):
         """ Get text from the results of a JQL query """
 
-        # Get secrets
-        secrets = dict(st.secrets['atlassian'])
-
         def handle_error(response):
             if not response.ok:
                 error_msg = response.reason
@@ -384,9 +381,17 @@ class TxtGetter:
                 raise ValueError(error_text)
 
         def get_issues_data(jql, start_at=0, max_results=50):
-            url = f"{secrets['jira_url']}{secrets['jira_api_endpoint']}/search"
 
-            auth = HTTPBasicAuth(secrets['email'], secrets['api_token'])
+            # Get config
+            jira_url = ConfigStore.nested_get('atlassian.jira_url')
+            jira_api_endpoint = ConfigStore.nested_get('atlassian.jira_api_endpoint')
+            api_token = ConfigStore.nested_get('atlassian.api_token')
+            email = ConfigStore.nested_get('atlassian.email')
+
+            # Format
+            url = f"{jira_url}{jira_api_endpoint}/search"
+
+            auth = HTTPBasicAuth(email, api_token)
             headers = {
                 "Accept": "application/json",
                 "Content-Type": "application/json"
@@ -580,11 +585,12 @@ class TxtGetter:
                 """).strip()
 
                 return output
-        # Usage
+
+        # Create extractor
         extractor = ConfluencePageExtractor(
-            url=st.secrets['atlassian']['jira_url'],
-            username=st.secrets['atlassian']['email'],
-            api_token=st.secrets['atlassian']['api_token']
+            url=ConfigStore.nested_get('atlassian.jira_url'),
+            username=ConfigStore.nested_get('atlassian.email'),
+            api_token=ConfigStore.nested_get('atlassian.api_token')
         )
         content = extractor.from_confluence_page(page_url_or_id)
         return content
