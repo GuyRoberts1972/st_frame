@@ -12,11 +12,32 @@ class GenerateRequirementsTxt(ToolBase):
 
         # Set up arguments
         self.setup_arguments({
-            "--build": {
+            "--generate": {
                 "action": "store_true",  # Boolean flag
-                "help": "Generate build_requirements.txt for build time dependencies."
+                "help": "Generate the neccesary requirements.txt"
             }
         })
+
+    def remove_local_modules(self, requirements_txt_path):
+        """ Remove entries matching local module that have added by pipreqs """
+
+        base_path = self.get_base_path()
+
+        # Get a list of folder names in the specified folder
+        folder_names = [f.name for f in os.scandir(base_path) if f.is_dir()]
+
+        # Open the text file and filter lines
+        with open(requirements_txt_path, 'r', encoding='utf-8') as file:
+            lines = file.readlines()
+
+        # Filter out lines that start with any of the folder names
+        filtered_lines = [
+            line for line in lines if not any(line.startswith(folder) for folder in folder_names)
+        ]
+
+        # Write the output
+        with open(requirements_txt_path, 'w', encoding='utf-8') as out_file:
+            out_file.writelines(filtered_lines)
 
     def create_requirements_txt(self, folder, save_path=None):
         """ Use the list of source files to generate the requirements.txt """
@@ -38,10 +59,15 @@ class GenerateRequirementsTxt(ToolBase):
         except subprocess.CalledProcessError as e:
             print(f"Error generating requirements file: {e}")
 
+        # Clean out local modules
+        self.remove_local_modules(save_path)
+
     def run(self):
         """ Run the tool """
 
-        if self.get_argument_value("--build"):
+        self.setup_python_path()
+
+        if self.get_argument_value("--generate"):
             self.create_requirements_txt('utils')
             self.create_requirements_txt('st_ui')
             self.create_requirements_txt('tools')

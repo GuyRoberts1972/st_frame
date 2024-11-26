@@ -3,6 +3,8 @@ import os
 import subprocess
 import logging
 import argparse
+import sys
+
 
 class ToolBase:
     """ Base class tools that provides core common functionality """
@@ -11,6 +13,13 @@ class ToolBase:
 
         self.base_path = None
         self.parser = argparse.ArgumentParser(description="Process command-line arguments.")
+
+    def setup_python_path(self):
+        """ adds paths needed for application code """
+
+        # Add the root folder
+        base_path = self.get_base_path()
+        sys.path.append(base_path)
 
     def setup_arguments(self, argument_dict):
         """

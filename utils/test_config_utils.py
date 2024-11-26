@@ -2,6 +2,7 @@
 import unittest
 from unittest.mock import patch, MagicMock
 import json
+import logging
 import toml
 from botocore.exceptions import ClientError
 from utils.config_utils import ConfigStore
@@ -14,33 +15,33 @@ class TestConfigStoreLocalStorage(unittest.TestCase):
         # Happy path
         templates_include_lib = ConfigStore.nested_get(
             'paths.templates_include_lib',
-            default_config_path='local::default',
-            env_var=None)
+            config_path='local::default')
         self.assertEqual(templates_include_lib, 'local_data/data/templates_include_lib')
 
         # invalid key
         with self.assertRaises(KeyError):
             ConfigStore.nested_get(
                 'paths.idonotexist',
-                default_config_path='local::default',
-                env_var=None)
+                config_path='local::default'
+                )
 
         # invalid section
         with self.assertRaises(FileNotFoundError):
             ConfigStore.nested_get(
                 'neitherdoi.idonotexist',
-                default_config_path='local::default',
-                env_var=None)
+                config_path='local::default'
+                )
 
         # Invalid local storage
         with self.assertRaises(KeyError):
             ConfigStore.nested_get(
                 'mute',
-                default_config_path='local::bad',
-                env_var=None)
+                config_path='local::bad'
+                )
 
 
 class TestConfigStoreAWSSSM(unittest.TestCase):
+
 
     @patch('utils.config_utils.boto3.client')
     def test_fetch_json_parameter(self, mock_boto3_client):
@@ -58,7 +59,7 @@ class TestConfigStoreAWSSSM(unittest.TestCase):
         mock_boto3_client.return_value = mock_client
 
         # Create the ConfigStore instance
-        store = ConfigStore(default_path='ssm::/test/config')
+        store = ConfigStore(config_path='ssm::/test/config')
 
         # Fetch the JSON parameter
         result = store['db']
@@ -82,7 +83,7 @@ class TestConfigStoreAWSSSM(unittest.TestCase):
         mock_boto3_client.return_value = mock_client
 
         # Create the ConfigStore instance
-        store = ConfigStore(default_path='ssm::/test/config')
+        store = ConfigStore(config_path='ssm::/test/config')
 
         # Fetch the TOML parameter
         result = store['settings']
@@ -105,14 +106,14 @@ class TestConfigStoreAWSSSM(unittest.TestCase):
         mock_boto3_client.return_value = mock_client
 
         # Create the ConfigStore instance
-        store = ConfigStore(default_path='ssm::/test/config')
+        store = ConfigStore(config_path='ssm::/test/config')
 
         # Fetch a non-existent parameter
         result = store.get('nonexistent', default={"default_key": "default_value"})
         self.assertEqual(result, {"default_key": "default_value"})
 
     @patch('utils.config_utils.boto3.client')
-    def test_fetch_json_default_path(self, mock_boto3_client):
+    def test_fetch_json_config_path(self, mock_boto3_client):
         # Mock the AWS response
         mock_client = MagicMock()
         mock_client.get_parameter.return_value = {
@@ -125,7 +126,7 @@ class TestConfigStoreAWSSSM(unittest.TestCase):
         mock_boto3_client.return_value = mock_client
 
         # Test default path usage
-        store = ConfigStore(env_var='TEST_ENV', default_path='/default/path')
+        store = ConfigStore(config_path='/default/path')
         result = store['config']
         self.assertEqual(result['key'], "value")
 
@@ -141,7 +142,7 @@ class TestConfigStoreAWSSSM(unittest.TestCase):
         mock_boto3_client.return_value = mock_client
 
         # Create the ConfigStore instance
-        store = ConfigStore(default_path='ssm::/test/config')
+        store = ConfigStore(config_path='ssm::/test/config')
 
         # Fetch the parameter and expect a parsing error
         with self.assertRaises(toml.TomlDecodeError):
@@ -159,13 +160,21 @@ class TestConfigStoreAWSSSM(unittest.TestCase):
         mock_boto3_client.return_value = mock_client
 
         # Create the ConfigStore instance
-        store = ConfigStore(default_path='ssm::/test/config')
+        store = ConfigStore(config_path='ssm::/test/config')
 
         # Fetch the parameter and expect a JSONDecodeError
         with self.assertRaises(json.JSONDecodeError):
             _db = store['db']
 
 class TestConfigStoreNestedGet(unittest.TestCase):
+
+    @classmethod
+    def setUpClass(cls):
+        logging.disable(logging.ERROR)  # Disable all logging
+
+    @classmethod
+    def tearDownClass(cls):
+        logging.disable(logging.NOTSET)  # Re-enable logging
 
     @patch.object(ConfigStore, '_fetch_section')
     def test_nested_get_success(self, mock_fetch_section):

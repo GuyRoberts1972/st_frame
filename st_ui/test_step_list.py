@@ -41,12 +41,11 @@ class TestStepContainer(unittest.TestCase):
         self.step_container.render_step("Step 1", lambda: [], expand=True, hide=False)
         mock_st.expander.assert_called_once_with("Step 1", True)
 
-class TestExampleUsage(unittest.TestCase):
     @patch("st_ui.step_list.StepContainer")
     @patch("st_ui.step_list.st")
-    def test_example_usage(self, mock_st, MockStepContainer):
+    def test_example_usage(self, mock_st, mock_step_container):
         # Mock the StepContainer instance
-        mock_container = MockStepContainer.return_value
+        mock_container = mock_step_container.return_value
 
         # Call the function
         example_usage()

@@ -6,9 +6,9 @@ import streamlit as st
 from st_ui.side_bar_state_mgr import SideBarStateMgr
 from st_ui.option_selector import OptionSelector
 from st_ui.json_viewer import JSONViewer
+from st_ui.floating_footer import FloatingFooter
 from utils.yaml_utils import YAMLUtils
 from utils.config_utils import ConfigStore
-
 
 def load_yaml_file(file_path):
     """ Load the YAML with includes and ref resolution """
@@ -144,6 +144,12 @@ def handle_template_selection(template_folder):
     # Not selected yet
     return False
 
+def show_version_and_config():
+    """ Show some version and config info in the footer """
+
+    footer_text = ConfigStore.get_config_status_string()
+    FloatingFooter.show(footer_text)
+
 def main():
     """ Main execution """
 
@@ -152,39 +158,41 @@ def main():
 
     # Check if we should display the JSON viewer
     json_viewer = JSONViewer()
-    if json_viewer.run():
-        return
+    if not json_viewer.run():
 
-    # Setup state manager - specify state keys to persist
-    key_storage_map = { 'persistant' : ['pdata_*'], 'volatile' : ['vdata_*']}
-    saved_states_dir = ConfigStore.nested_get('paths.saved_states')
-    state_manager = SideBarStateMgr(key_storage_map, saved_states_dir)
-    template_folder = ConfigStore.nested_get('paths.use_case_templates')
-    if handle_template_selection(template_folder):
-        # Run the app using the YAML
-        try:
-            # Load the template
-            relative_path = st.session_state.pdata_selected_use_case_path
-            base_dir = get_base_dir()
-            abs_path = os.path.join(base_dir, template_folder, relative_path)
-            abs_path = os.path.normpath(abs_path) + '.yaml'
-            config = load_yaml_file(abs_path)
+        # Setup state manager - specify state keys to persist
+        key_storage_map = { 'persistant' : ['pdata_*'], 'volatile' : ['vdata_*']}
+        saved_states_dir = ConfigStore.nested_get('paths.saved_states')
+        state_manager = SideBarStateMgr(key_storage_map, saved_states_dir)
+        template_folder = ConfigStore.nested_get('paths.use_case_templates')
+        if handle_template_selection(template_folder):
+            # Run the app using the YAML
+            try:
+                # Load the template
+                relative_path = st.session_state.pdata_selected_use_case_path
+                base_dir = get_base_dir()
+                abs_path = os.path.join(base_dir, template_folder, relative_path)
+                abs_path = os.path.normpath(abs_path) + '.yaml'
+                config = load_yaml_file(abs_path)
 
-            # Run the method - use defaults for source file and method based on app name
-            class_name = config['flow_app']
-            default_app_filename = class_name.removesuffix('FlowApp').lower() + '.py'
-            app_filename = config.get('flow_app_filename', default_app_filename)
-            relative_path = f"flow_apps/{app_filename}"
-            method_name = config.get("method_name", "run")
-            load_and_run_static_method(
-                relative_path=relative_path,
-                class_name=class_name,
-                method_name=method_name,
-                config=config,
-                state_manager=state_manager)
+                # Run the method - use defaults for source file and method based on app name
+                class_name = config['flow_app']
+                default_app_filename = class_name.removesuffix('FlowApp').lower() + '.py'
+                app_filename = config.get('flow_app_filename', default_app_filename)
+                relative_path = f"flow_apps/{app_filename}"
+                method_name = config.get("method_name", "run")
+                load_and_run_static_method(
+                    relative_path=relative_path,
+                    class_name=class_name,
+                    method_name=method_name,
+                    config=config,
+                    state_manager=state_manager)
 
-        except yaml.YAMLError as e:
-            print(f"Error parsing YAML string: {e}")
+            except yaml.YAMLError as e:
+                print(f"Error parsing YAML string: {e}")
+
+    # Footer
+    show_version_and_config()
 
 if __name__ == '__main__':
     main()

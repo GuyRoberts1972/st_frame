@@ -118,6 +118,7 @@ class OptionSelector:
                 st.rerun()
 
 def example_usage():
+    """ Usage illustration """
     options = {
         "fruits": {
             "icon": "\U0001F34E",  # Red Apple

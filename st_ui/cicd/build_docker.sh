@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Function to determine if script is running in GitHub Actions
+# Function to determine if the script is running in GitHub Actions
 is_github_actions() {
   [[ -n "$GITHUB_ACTIONS" ]]
 }
@@ -27,6 +27,8 @@ fi
 TARGET="st_ui"
 DEFAULT_IMAGE_NAME=$TARGET
 DEFAULT_IMAGE_TAG="local"
+DEFAULT_GIT_RUN_NUMBER="manual"
+DEFAULT_COMMIT_REF="manual"
 
 # Image name construction
 if is_github_actions; then
@@ -54,10 +56,21 @@ else
   IMAGE_TAG=$DEFAULT_IMAGE_TAG
 fi
 
-# Log the image name and tag for debugging
+# Set the Git run number and commit ref
+if is_github_actions; then
+  GIT_RUN_NUMBER="${GITHUB_RUN_NUMBER:-manual}"
+  COMMIT_REF="${GITHUB_SHA:-manual}"
+else
+  GIT_RUN_NUMBER=$DEFAULT_GIT_RUN_NUMBER
+  COMMIT_REF=$DEFAULT_COMMIT_REF
+fi
+
+# Log the image name, tag, and additional info for debugging
 echo "Building Docker image:"
 echo "  IMAGE_NAME: $IMAGE_NAME"
 echo "  IMAGE_TAG: $IMAGE_TAG"
+echo "  GIT_RUN_NUMBER: $GIT_RUN_NUMBER"
+echo "  COMMIT_REF: $COMMIT_REF"
 
 # Build the Docker image
 docker build -f ./st_ui/cicd/Dockerfile --cache-from "$IMAGE_NAME:latest" -t "$IMAGE_NAME:$IMAGE_TAG" .
@@ -67,19 +80,26 @@ if is_github_actions; then
   # Save to environment variables
   echo "IMAGE_NAME=$IMAGE_NAME" >> "$GITHUB_ENV"
   echo "IMAGE_TAG=$IMAGE_TAG" >> "$GITHUB_ENV"
+  echo "GIT_RUN_NUMBER=$GIT_RUN_NUMBER" >> "$GITHUB_ENV"
+  echo "COMMIT_REF=$COMMIT_REF" >> "$GITHUB_ENV"
 
   # Save to job outputs
   echo "image_name=$IMAGE_NAME" >> "$GITHUB_OUTPUT"
   echo "image_tag=$IMAGE_TAG" >> "$GITHUB_OUTPUT"
+  echo "git_run_number=$GIT_RUN_NUMBER" >> "$GITHUB_OUTPUT"
+  echo "commit_ref=$COMMIT_REF" >> "$GITHUB_OUTPUT"
 fi
 
 # Export variables locally for the current shell session
 if ! is_github_actions; then
-
   export IMAGE_NAME="$IMAGE_NAME"
   export IMAGE_TAG="$IMAGE_TAG"
+  export GIT_RUN_NUMBER="$GIT_RUN_NUMBER"
+  export COMMIT_REF="$COMMIT_REF"
 
   echo "Environment variables set:"
   echo "  IMAGE_NAME=$IMAGE_NAME"
   echo "  IMAGE_TAG=$IMAGE_TAG"
+  echo "  GIT_RUN_NUMBER=$GIT_RUN_NUMBER"
+  echo "  COMMIT_REF=$COMMIT_REF"
 fi
