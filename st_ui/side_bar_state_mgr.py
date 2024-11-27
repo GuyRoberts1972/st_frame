@@ -2,11 +2,11 @@
 import json
 import os
 import tempfile
-import shutil
 import streamlit as st
 from streamlit_option_menu import option_menu
+from utils.storage_utils import LocalStorageBackend
 from st_ui.json_viewer import JSONViewer
-import logging
+
 
 class SideBarStateMgr:
     """ Main class to render side nav bar and manage state switches """
@@ -33,8 +33,8 @@ class SideBarStateMgr:
     def __init__(self, key_storage_map, saved_states_dir):
 
         # Store
-        self.saved_states_dir = saved_states_dir
         self.key_storage_map = key_storage_map
+        self.storage = LocalStorageBackend(saved_states_dir)
 
         # Handle state loading at the beginning of the script
         if 'sbsm_state_to_load' in st.session_state:
@@ -90,56 +90,54 @@ class SideBarStateMgr:
         # Now set
         st.session_state.update(loaded_state)
 
-    def get_cur_saved_states_dir(self):
-        """ get the location where state is saved, creating if need be """
-
-        if not os.path.exists(self.saved_states_dir):
-            os.makedirs(self.saved_states_dir)
-        return self.saved_states_dir
-
-    def get_state_path(self, name):
-        """ Get the path to store the state with the given name """
-        state_path = os.path.join(self.get_cur_saved_states_dir(), f"{name}.json")
-        return state_path
+    def get_state_relative_path(self, name):
+        """ Get the relative path and file name to store the state in """
+        rel_path = f"{name}.json"
+        return rel_path
 
     def save_state(self, name, key_storage_map):
-        """ Save the current state to the name """
+        """ Save the named state to storage """
         state_to_save = {key: st.session_state[key] for key in st.session_state
                          if SideBarStateMgr.key_is_persistant(key, key_storage_map)}
-        with open(self.get_state_path(name), 'w', encoding='utf-8') as f:
-            json.dump(state_to_save, f)
+        rel_path = self.get_state_relative_path(name)
+        self.storage.write_text(rel_path, json.dumps(state_to_save))
+
 
     def load_state(self, name, key_storage_map):
         """ Load the state for the name """
-        with open(self.get_state_path(name), 'r', encoding='utf-8') as f:
-            loaded_state = json.load(f)
+        rel_path = self.get_state_relative_path(name)
+        loaded_state = self.storage.read_text(rel_path)
+        loaded_state = json.loads(loaded_state)
         return {key: loaded_state[key] for key in loaded_state
                 if SideBarStateMgr.key_is_persistant(key, key_storage_map)}
 
     def get_saved_states(self):
         """ Get a list of all the stored states """
-        dir_list = os.listdir(self.get_cur_saved_states_dir())
+        dir_list = self.storage.list_files('')
         return [os.path.splitext(f)[0] for f in dir_list if f.endswith('.json')]
 
     def delete_state(self, name):
         """ Remove the state with the specified name """
-        os.remove(self.get_state_path(name))
+        rel_path = self.get_state_relative_path(name)
+        self.storage.delete(rel_path)
 
     def rename_state(self, old_name, new_name):
         """ Rename the state in storage """
-        os.rename(self.get_state_path(old_name), self.get_state_path(new_name))
+        old_rel_path = self.get_state_relative_path(old_name)
+        new_rel_path = self.get_state_relative_path(new_name)
+        self.storage.rename(old_rel_path, new_rel_path)
 
     def duplicate_state(self, name):
         """ Make a copy of name, check for clashes and increment an index, return new name """
         index = 1
         while True:
             new_name = f'{name}_{index}'
-            source_path = self.get_state_path(name)
-            destination_path = self.get_state_path(new_name)
+            source_rel_path = self.get_state_relative_path(name)
+            destination_rel_path = self.get_state_relative_path(new_name)
 
-            if not os.path.exists(destination_path):
+            if not self.storage.file_exists(destination_rel_path):
                 try:
-                    shutil.copy2(source_path, destination_path)
+                    self.storage.copy(source_rel_path, destination_rel_path)
                     return new_name
                 except IOError as exc:
                     raise RuntimeError(f"Error copying file: {exc}") from exc
