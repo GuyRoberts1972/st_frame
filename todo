@@ -75,7 +75,7 @@
     - [x] Smoke Test
         - [x] minimum smoke config
     - [ ] repeat for API
-    - [ ] requirements generation, for test only (moto)
+    - [x] requirements generation, for test only (moto)
  - Component split out
     - [x] s3 support for state
         - [ ] make sure local data paths are handled securely
@@ -104,7 +104,7 @@
 # Templates
  - Editor
  - [x] Anchors and aliases
- - [ ] Custom merging based on jpath syntax
+ - [x] Custom merging based on jpath style syntax
 
 # Connectors.Getters
  [x] confluence
@@ -114,6 +114,8 @@
  [x] JIRA tickets
  [ ] JIRA ticket fixes for fields codeBlock, mention, inlineCard etc
  [ ] DB query step to get data
+ [ ] Add getters for the storage classes (s3, github)
+ [ ] rework getters, split out file type text extraction, listing (browsing) / pickers and getters.
 
  # Connectors.Exporters
  [ ] confluence
