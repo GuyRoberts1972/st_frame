@@ -1,0 +1,60 @@
+title: "Steps Down Page"
+description: "Step by step but showing done steps as we progress. Default data is country Wikipedia pages."
+enabled: True
+flow_app: "SummaryFlowApp"
+step_options:
+  ack_changes: Next|Click next to continue
+  visibility: afterActive
+  status_description_visibility: waitingEnqueuedAndAckOnly
+  btn_reset: Clear|Clear and restart this step
+  btn_view_json: View JSON|View the step state in JSON
+steps:
+  choose_llm:
+    heading: Choose the LLM
+    class: ChooseLLMFlavour
+
+  define_input_defs:
+    heading: List of Web Site URLs
+    class: DefineInputDataStep
+    data_defs:
+      extracted_text:
+        description: "List URls"
+        type: urls
+        default_value: |
+          https://en.wikipedia.org/wiki/France
+          https://en.wikipedia.org/wiki/England
+          https://en.wikipedia.org/wiki/Japan
+
+  
+  retrieve_data:
+    heading: Retrieve Data
+    class: RetrieveDataStep
+    depends_on:
+      data_sources: define_input_defs
+
+  initial_system_prompt:
+    heading: System prompt to set the framework
+    class: FormatPromptStep
+    template: |
+      You are a helpful AI assistant. You will be given text from some pages to digest and then discuss.
+    
+  initial_human_prompt:
+    heading: Initial Human Prompt
+    class: FormatPromptStep
+    depends_on:
+      extracted_text: retrieve_data.extracted_text
+    template: |
+      Analyse the following text extracted from various sources and the get ready to answer my questions. 
+      Start by suggesting some questions you could answer.
+      ---- START: EXTRACTED TEXT ----
+      {extracted_text}
+      ---- END: EXTRACTED TEXT ----
+
+  refinement_loop:
+    heading: Analyse and Discuss
+    class: ChatLoopStep
+    depends_on:
+        initial_system_prompt: initial_system_prompt
+        initial_human_prompt: initial_human_prompt
+        chat_model_choice: choose_llm
+

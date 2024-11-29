@@ -10,14 +10,14 @@ class AWSUtils:
     CREDENTIALS_NOT_CONFIGURED = "AWS credentials are not configured."
     REGION_NOT_CONFIGURED = "AWS region is not configured."
     PARTIAL_CREDENTIALS = "AWS credentials are partially configured. Check your setup."
-    CONFIGURED = "AWS is configured. Region: {region}, Access Key: {access_key}****"
+    CONFIGURED = "Ok, {region}, Key: {access_key}****"
     UNEXPECTED_ERROR = "An unexpected error occurred: {error}"
 
     @staticmethod
     def is_aws_configured() -> tuple[bool, str]:
         """
         Checks if AWS is configured by validating credentials and default region.
-        Returns a tuple (Y/N, reason)
+        Returns a tuple (Y/N, status)
         """
         try:
             session = boto3.Session()

@@ -1,0 +1,9 @@
+#!local_include _include.yaml
+<<: *base_chat
+title: "Generic Chat"
+description: "Friendly generic chat"
+steps:
+  <<: *base_chat-steps
+  chat_loop: 
+    <<: *base_chat-steps-chat_loop
+    input_place_holder_text: Type a question

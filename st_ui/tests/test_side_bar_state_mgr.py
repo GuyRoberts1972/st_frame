@@ -5,7 +5,8 @@ import json
 import tempfile
 from unittest.mock import patch
 import streamlit as st
-from st_ui.side_bar_state_mgr import SideBarStateMgr
+from st_ui.side_bar_state_mgr import SideBarStateMgr, example_usage
+
 
 class MockSessionState(dict):
     def __getattr__(self, name):
@@ -202,6 +203,11 @@ class TestSideBarStateMgr(unittest.TestCase):
             'exact_match': 'value4'
         })
         self.assertNotIn('other_key', loaded_state)
+
+    def test_example_usage(self):
+
+        # Call the example_usage function
+        example_usage()
 
 if __name__ == '__main__':
     unittest.main()

@@ -1,0 +1,56 @@
+title: "One Step At A Time - Directed Flow"
+description: "Takes user through series of steps only showing active step"
+enabled: True
+flow_app: "SummaryFlowApp"
+step_options:
+  ack_changes: Next|Click next to continue
+  visibility: anyActive
+  status_description_visibility: waitingEnqueuedAndAckOnly
+  btn_reset: Clear|Clear and restart this step
+  btn_view_json: View JSON|View the step state in JSON
+steps:
+  choose_llm:
+    heading: Choose The LLM Flavour
+    class: ChooseLLMFlavour
+
+  define_input_defs:
+    heading: Select Web Site
+    class: DefineInputDataStep
+    data_defs:
+      extracted_text:
+        description: "Choose a website to scrape data"
+        type: url
+        default_value: https://en.wikipedia.org/wiki/Albert_Einstein
+
+  retrieve_data:
+    heading: Retrieve Data
+    class: RetrieveDataStep
+    depends_on:
+      data_sources: define_input_defs
+
+  initial_system_prompt:
+    heading: System Prompt to Set Ground Rules
+    class: FormatPromptStep
+    template: |
+      You are a helpful AI assistant. You will be given text from some pages to digest and then discuss.
+    
+  initial_human_prompt:
+    heading: Human Prompt For Chat Loop
+    class: FormatPromptStep
+    depends_on:
+      extracted_text: retrieve_data.extracted_text
+    template: |
+      Analyse the following text extracted from various sources and the get ready to answer my questions. 
+      Start by suggesting some questions you could answer.
+      ---- START: EXTRACTED TEXT ----
+      {extracted_text}
+      ---- END: EXTRACTED TEXT ----
+
+  refinement_loop:
+    heading: Summarise & Discuss
+    class: ChatLoopStep
+    depends_on:
+        initial_system_prompt: initial_system_prompt
+        initial_human_prompt: initial_human_prompt
+        chat_model_choice: choose_llm
+

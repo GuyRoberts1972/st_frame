@@ -1,0 +1,80 @@
+base_jql_summary:
+  title: "JIRA JQL Query Summary"
+  description: "Template to run a JQL query and produce a summary"
+  enabled: True
+  flow_app: "SummaryFlowApp"
+  step_options:
+    show_status_description: waitingEnqueuedAndAckOnly
+    visibility: afterActive
+
+  steps:
+
+    choose_llm:
+      heading: Choose the LLM
+      class: ChooseLLMFlavour
+
+    define_input_defs:
+      heading: JQL Query
+      class: DefineInputDataStep
+      data_defs:
+        extracted_text:
+          description: "Jira JQL query"
+          type: jira_jql_query
+      step_options:
+        ack_changes: Apply|Confirm the JQL query to use
+        btn_reset_from_here: Restart| Restart from here
+
+    retrieve_data:
+      heading: Retrieve Data
+      class: RetrieveDataStep
+      depends_on:
+        data_sources: define_input_defs
+      step_options:
+        ack_start: null
+        btn_view_json: View JSON|See or download the JSON with the data retrieved
+
+    summary_options:
+      heading: Summary Options
+      class: SelectPromptFragmentsStep
+      fragment_options:
+        summary_type:
+          label: Choose type of summary
+          choices: null
+      step_options:
+        ack_changes: Create Report|Comfirm summary choice and create report
+        btn_reset_from_here: Restart| Restart from here
+
+    initial_system_prompt:
+      heading: System prompt to set the framework
+      class: FormatPromptStep
+      depends_on:
+          summary_type: summary_options.summary_type
+      template: |
+        You are a helpful AI assistant who can summarise text.
+        You will be given text extracted from a JIRA JQL query
+        Analyse the information and create a draft as guided by the instructions and format specified.
+        Then converse with the human answering questions and adjustng the draft as neccesary.
+        Use the template and guidance below as the summary format:
+        {summary_type}
+
+    initial_human_prompt:
+      heading: Human prompt for chat loop
+      class: FormatPromptStep
+      depends_on:
+        extracted_text: retrieve_data.extracted_text
+      template: |
+        Analyse the following text created from the results of a JIRA JQL query and then provide a summary
+        ---- START: EXTRACTED TEXT ----
+        {extracted_text}
+        ---- END: EXTRACTED TEXT ----
+
+    refinement_loop:
+      heading: Produce Report
+      class: ChatLoopStep
+      depends_on:
+          initial_system_prompt: initial_system_prompt
+          initial_human_prompt: initial_human_prompt
+          chat_model_choice: choose_llm
+      step_options:
+        btn_reset: Clear| Clear the chat and regenerate
+        btn_reset_all: Start Over| Start from the begining

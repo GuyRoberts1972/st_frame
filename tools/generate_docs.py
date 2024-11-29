@@ -123,6 +123,8 @@ class DocGenerator(ToolBase):
     def run(self):
         """ Run the tool """
 
+        self.setup_python_path()
+
         module_dict, class_dict = self.create_module_and_class_info()
 
         print("Module Docstrings:")

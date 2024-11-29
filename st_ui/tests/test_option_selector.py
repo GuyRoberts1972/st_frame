@@ -1,8 +1,8 @@
 # pylint: disable=missing-function-docstring, missing-module-docstring, missing-class-docstring, protected-access
 import unittest
 from unittest.mock import patch, MagicMock
-from option_selector import OptionSelector
 import streamlit as st
+from st_ui.option_selector import OptionSelector, example_usage
 
 class TestOptionSelector(unittest.TestCase):
 
@@ -86,6 +86,17 @@ class TestOptionSelector(unittest.TestCase):
         mock_button.side_effect = [False, True]  # Back button pressed
         self.selector._render_sub_options()
         self.on_cancel.assert_called_once()
+
+    @patch("st_ui.option_selector.st")  # Mock the streamlit module
+    def test_example_usage(self, mock_st):
+
+        # Setup mock for st.markdown and st.write
+        mock_st.markdown = MagicMock()
+        mock_st.write = MagicMock()
+
+        # Call the example_usage function
+        example_usage()
+
 
 if __name__ == "__main__":
     unittest.main()

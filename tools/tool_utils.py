@@ -3,6 +3,8 @@ import os
 import subprocess
 import logging
 import argparse
+import sys
+
 
 class ToolBase:
     """ Base class tools that provides core common functionality """
@@ -11,6 +13,13 @@ class ToolBase:
 
         self.base_path = None
         self.parser = argparse.ArgumentParser(description="Process command-line arguments.")
+
+    def setup_python_path(self):
+        """ adds paths needed for application code """
+
+        # Add the root folder
+        base_path = self.get_base_path()
+        sys.path.append(base_path)
 
     def setup_arguments(self, argument_dict):
         """
@@ -96,3 +105,20 @@ class ToolBase:
 
         # Done
         return filtered_paths
+
+    def get_folders_with_python_files(self, skip_missing=True):
+        """Wrapper to find top-level folders containing Python files."""
+
+        git_files = self.get_git_files(skip_missing=skip_missing)
+
+        # Filter for Python files
+        python_files = [file for file in git_files if file.endswith('.py')]
+
+        # Extract top-level folders
+        top_level_folders = set()
+        for file in python_files:
+            top_folder = file.split(os.sep)[0]  # Get the first folder
+            if top_folder:  # Ignore files at the root level
+                top_level_folders.add(top_folder)
+
+        return sorted(top_level_folders)  # Return sorted list for consistency

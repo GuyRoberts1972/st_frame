@@ -1,0 +1,12 @@
+#!local_include _include.yaml
+<<: *base_summary
+title: "List of JIRA Tickets from JQL Query"
+description: "Will run a JQL query and then summarise and chat"
+steps:
+  <<: *base_summary-steps
+  define_input_defs:
+    <<: *base_summary-steps-define_input_defs
+    data_defs:
+      extracted_text:
+        description: "Jira JQL query"
+        type: jira_jql_query

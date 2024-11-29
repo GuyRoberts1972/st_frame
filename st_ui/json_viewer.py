@@ -94,8 +94,8 @@ class JSONViewer:
         st.session_state[JSONViewer.state_key] = dict(data)
         st.rerun()
 
-def main():
-    """ Example code to show usage """
+def example_usage():
+    """ Usage illustration """
 
     # Example usage
     st.title("Example Viewer")
@@ -126,4 +126,4 @@ def main():
             st.error("Invalid JSON format. Please check your input.")
 
 if __name__ == "__main__":
-    main()
+    example_usage()

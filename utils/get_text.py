@@ -9,7 +9,7 @@ import textwrap
 import csv
 import requests
 from bs4 import BeautifulSoup
-import PyPDF2
+from pypdf import PdfReader
 import docx
 from atlassian import Confluence
 from pptx import Presentation
@@ -78,7 +78,7 @@ class TxtGetter:
     @staticmethod
     def from_pdf(file):
         """ from an adobe pdf file """
-        pdf_reader = PyPDF2.PdfReader(file)
+        pdf_reader = PdfReader(file)
         text = ""
         for page in pdf_reader.pages:
             text += page.extract_text() + "\n"

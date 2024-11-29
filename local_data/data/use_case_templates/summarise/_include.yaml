@@ -1,0 +1,101 @@
+
+base_summary: &base_summary
+  title: "Base Summary"
+  description: "Defines the skeleton for summaries"
+  enabled: True
+  flow_app: "SummaryFlowApp"
+  step_options:
+      show_status_description: waitingEnqueuedAndAckOnly
+      visibility: afterActive
+
+  steps: &base_summary-steps
+    choose_llm:
+      heading: Choose the LLM
+      class: ChooseLLMFlavour
+      step_options:
+        btn_reset: Change | Change this but don't clear subsequent steps
+        ack_changes: Confirm | Confirm model selection
+
+    define_input_defs: &base_summary-steps-define_input_defs
+      heading: Data to Summarise
+      class: DefineInputDataStep
+      data_defs: &base_summary-steps-define_input_defs-data_defs
+        extracted_text:
+      step_options:
+        btn_reset_from_here: Rollback | Clear and replay the flow here
+
+    retrieve_data:
+      heading: Retrieve Data
+      class: RetrieveDataStep
+      depends_on:
+        data_sources: define_input_defs
+      step_options:
+        ack_start: null
+
+    summary_options:
+      heading: Summary Options
+      class: SelectPromptFragmentsStep
+      fragment_options:
+        summary_type:
+          label: Choose type of summary
+          choices:
+            Executive Summary: "Provide a concise executive summary of the main points in the document."
+            Bullet Points: "Summarize the key points of the document in a bullet point list."
+            TLDR: "Give a very brief 'Too Long; Didn't Read' summary of the document."
+            Pros and Cons: "Summarize the main advantages and disadvantages or arguments for and against presented in the document."
+            Tag, Sentence, Elevator: "Give a 5 word 'tag line' summary, a 50 word 'elevator pitch' summary and a 200 word 'exec sum' summary"
+            Five Languages: "Give a summary in 5 languages of your choice"
+        style:
+          label: Choose a style
+          choices:
+            Succint: Make the text short and to the point
+            Moderate: Use a good balance of succinctness and detail
+            Exhaustive: Add all the details and give ample commentory
+      step_options:
+        btn_reset: Change | Change this but don't clear subsequent steps
+        ack_changes: Confirm | Confirm summary options
+        btn_reset_from_here: Rollback | Clear and replay the flow here
+
+    initial_system_prompt:
+      heading: System prompt to set the framework
+      class: FormatPromptStep
+      depends_on:
+          summary_type: summary_options.summary_type
+          style: summary_options.style
+      template: |
+        You are a helpful AI assistant who can summarise text.
+        You will be given text from various sources to summarise.
+        Analyse the information and create a draft as guided by the instructions and format specified.
+        Then converse with the human answering questions and adjustng the draft as neccesary.
+        The goal is to collaborate and produce a draft in the format specified.
+        It's ok to discuss details of the intext cident, but keep the conversation on topic and heading towards that goal.
+
+        Use the followng writing style when drafting:
+          {style}
+
+        Use the template and guidance below as the summary format:
+          {summary_type}
+
+    initial_human_prompt:
+      heading: Human prompt for chat loop
+      class: FormatPromptStep
+      depends_on:
+        extracted_text: retrieve_data.extracted_text
+      template: |
+        Analyse the following text extracted from various sources
+        Create a summary in the format and style specified
+        ---- START: EXTRACTED TEXT ----
+        {extracted_text}
+        ---- END: EXTRACTED TEXT ----
+
+    refinement_loop:
+      heading: Review and Refine Draft
+      class: ChatLoopStep
+      depends_on:
+        initial_system_prompt: initial_system_prompt
+        initial_human_prompt: initial_human_prompt
+        chat_model_choice: choose_llm
+      step_options:
+        btn_reset: Clear| Restart the chat
+        btn_reset_all: Clear All| Restart the entire flow
+

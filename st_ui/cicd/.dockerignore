@@ -1,4 +1,6 @@
 test_*.py
+test/
+tests/
 *.pyc
 *.pyo
 __pycache__/
@@ -6,3 +8,4 @@ __pycache__/
 Dockerfile
 .dockerignore
 cicd/
+

@@ -4,7 +4,7 @@ from unittest.mock import MagicMock
 import streamlit as st
 from utils.step_utils import BaseFlowStep, StepConfigException
 
-class TestFlowStep(BaseFlowStep):
+class FlowStepTest(BaseFlowStep):
     """ Stub flow step for testing """
 
     def do(self, step_config, state_dict, step_status):
@@ -13,7 +13,7 @@ class TestFlowStep(BaseFlowStep):
 class TestBaseFlowStepKeyMgmt(unittest.TestCase):
     def setUp(self):
         self.mock_app = MagicMock()
-        self.step = TestFlowStep("test_step", self.mock_app, {"default_key": "default_value"})
+        self.step = FlowStepTest("test_step", self.mock_app, {"default_key": "default_value"})
         st.session_state = {}
 
     def test_get_unique_key_prefix(self):
@@ -53,7 +53,7 @@ class TestBaseFlowStep(unittest.TestCase):
     def setUp(self):
         self.mock_app = MagicMock()
         self.mock_app.get_step_config.return_value = {}
-        self.step = TestFlowStep("test_step", self.mock_app, {"default_key": "default_value"})
+        self.step = FlowStepTest("test_step", self.mock_app, {"default_key": "default_value"})
 
     def test_init(self):
         self.assertEqual(self.step.name, "test_step")

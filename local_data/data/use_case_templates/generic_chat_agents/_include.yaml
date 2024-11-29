@@ -1,0 +1,95 @@
+
+base_chat: &base_chat
+    title: "Base Chat"
+    description: "Defines base level chat loop"
+    enabled: True
+    flow_app: "SummaryFlowApp"
+    step_options:
+        show_status_description: waitingEnqueuedAndAckOnly
+
+    steps: &base_chat-steps
+        choose_llm: &base_chat-steps-choose_llm
+            heading: Choose the LLM
+            class: ChooseLLMFlavour
+            step_options:
+                ack_changes: Apply|Use this model
+                btn_reset: Change|Change the model flavour
+
+        initial_system_prompt: &base_chat-steps-initial_system_prompt
+            heading: Set ground rules for chat bot
+            class: FormatPromptStep
+            template: |
+                You are an assistant that will interact with a human and provide guidance.
+
+        initial_human_prompt: &base_chat-steps-initial_human_prompt
+            heading: Set persona and context
+            class: FormatPromptStep
+            template: |
+                Chat with me about any things I ask. Briefly introduce yourself, your role and what you can chat about.
+
+        chat_loop: &base_chat-steps-chat_loop
+            heading: Chat
+            class: ChatLoopStep
+            retrieve_context: True
+            input_place_holder_text: Ask a question.
+            retrieve_context: False
+            depends_on:
+                initial_system_prompt: initial_system_prompt
+                initial_human_prompt: initial_human_prompt
+                chat_model_choice: choose_llm
+            step_options:
+                btn_reset: Clear|Clear and restart this chat
+
+topic_chat: &topic_chat
+    title: "Chat about a preloaded topic"
+    description: "Will retrieve the specified data and chat"
+    enabled: True
+    flow_app: "SummaryFlowApp"
+    step_options:
+        show_status_description: waitingEnqueuedAndAckOnly
+    steps: &topic_chat-steps
+        choose_llm:
+            heading: Choose the LLM
+            class: ChooseLLMFlavour
+
+        define_input_defs: &topic_chat-steps-define_input_defs
+            heading: Define Topic
+            class: DefineInputDataStep
+            data_defs:
+            extracted_text:
+                description: "Topic Text Urls"
+                type: urls
+
+        retrieve_data:
+            heading: Retrieve Data
+            class: RetrieveDataStep
+            depends_on:
+                data_sources: define_input_defs
+            step_options:
+                ack_start: 
+                btn_view_json: View JSON | See the retrieved data
+
+        initial_system_prompt: &topic_chat-steps-initial_system_prompt
+            heading: System prompt to set the framework
+            class: FormatPromptStep
+            template: You are a helpful AI assistant who will be provided some text to discuss
+            
+        initial_human_prompt:
+            heading: Human prompt for chat loop
+            class: FormatPromptStep
+            depends_on:
+                extracted_text: retrieve_data.extracted_text
+            template: |
+                Analyse the following text extracted from various sources and the get ready to answer my questions. 
+                Start by suggesting some questions you could answer.
+                ---- START: EXTRACTED TEXT ----
+                {extracted_text}
+                ---- END: EXTRACTED TEXT ----
+
+        chat_loop: &topic_chat-steps-chat_loop
+            heading: Topic Discussion
+            class: ChatLoopStep
+            depends_on:
+                initial_system_prompt: initial_system_prompt
+                initial_human_prompt: initial_human_prompt
+                chat_model_choice: choose_llm

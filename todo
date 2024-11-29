@@ -68,14 +68,16 @@
 # CICD
  - GitHub Actions
     - [@] Unit test & coverage
+        - [ ] getters refactor
     - [@] Pylint
+        - [ ] getters refactor
     - [@] container build & publish
-    - [ ] Smoke Test
-        - [ ] minimum smoke config
+    - [x] Smoke Test
+        - [x] minimum smoke config
     - [ ] repeat for API
-
+    - [ ] requirements generation, for test only (moto)
  - Component split out
-    - [ ] s3 support for state
+    - [x] s3 support for state
         - [ ] make sure local data paths are handled securely
     - [ ] move existing to state and templates to s3
     - [ ] move model library to config
@@ -94,7 +96,7 @@
 
 # State Manager
  - storage
-  - storage in s3
+  - [x] storage in s3
   - shared storage between users
   - different storage user
   - folder navigation
@@ -110,6 +112,7 @@
  [x] web page scrapers
  [ ] web download documents
  [x] JIRA tickets
+ [ ] JIRA ticket fixes for fields codeBlock, mention, inlineCard etc
  [ ] DB query step to get data
 
  # Connectors.Exporters
