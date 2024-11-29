@@ -1,6 +1,6 @@
 """ For use cases that provide analysis and summaries """
+import yaml
 from utils.app_utils import BaseFlowApp
-
 
 class SummaryFlowApp(BaseFlowApp):
     """ Flow app class for summary flows """
@@ -114,13 +114,13 @@ def run_standalone():
     """
 
     # Parse the YAML string into a Python dictionary
-    import yaml
     config = yaml.safe_load(config_yaml)
 
     # Stub class for saving
     class StubStatemanager:
+        """ Stub to handle save call back"""
         def save_session_to_state(self):
-            pass
+            """ stub out the save call """
 
     # Run the example app
     SummaryFlowApp.run(config, StubStatemanager())

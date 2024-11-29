@@ -108,20 +108,17 @@ class ToolBase:
 
     def get_folders_with_python_files(self, skip_missing=True):
         """Wrapper to find top-level folders containing Python files."""
-        try:
-            git_files = self.get_git_files(skip_missing=skip_missing)
 
-            # Filter for Python files
-            python_files = [file for file in git_files if file.endswith('.py')]
+        git_files = self.get_git_files(skip_missing=skip_missing)
 
-            # Extract top-level folders
-            top_level_folders = set()
-            for file in python_files:
-                top_folder = file.split(os.sep)[0]  # Get the first folder
-                if top_folder:  # Ignore files at the root level
-                    top_level_folders.add(top_folder)
+        # Filter for Python files
+        python_files = [file for file in git_files if file.endswith('.py')]
 
-            return sorted(top_level_folders)  # Return sorted list for consistency
-        except Exception as e:
-            logging.error(f"Error in get_folders_with_python_files: {e}")
-            return []
+        # Extract top-level folders
+        top_level_folders = set()
+        for file in python_files:
+            top_folder = file.split(os.sep)[0]  # Get the first folder
+            if top_folder:  # Ignore files at the root level
+                top_level_folders.add(top_folder)
+
+        return sorted(top_level_folders)  # Return sorted list for consistency

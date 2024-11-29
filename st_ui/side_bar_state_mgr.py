@@ -2,6 +2,7 @@
 import json
 import os
 import tempfile
+import shutil
 import streamlit as st
 from streamlit_option_menu import option_menu
 from utils.storage_utils import StorageBackend
@@ -490,31 +491,39 @@ class SideBarStateMgr:
         return st.session_state.get('sbsm_current_state', default)
 
 
-
 def example_usage():
-    """ Function to illustrate usage """
+    """Function to illustrate usage."""
 
-    # Wide is best
+    # Set Streamlit page configuration
     st.set_page_config(layout="wide")
 
     # Setup state manager - specify state keys to persist
-    key_storage_map = { "persistant" : ['p_*'], "volatile" : ['v_*'] }
-    temp_dir = tempfile.gettempdir() + '/SideBarStateMgr-example_usage'
-    state_manager = SideBarStateMgr(key_storage_map, temp_dir)
+    key_storage_map = {"persistant": ['p_*'], "volatile": ['v_*']}
 
-    st.title("Example App To Demo State Manager")
+    # Create a temporary directory
+    temp_dir = tempfile.mkdtemp(prefix="SideBarStateMgr_example_")
+    try:
+        # Initialize the state manager with the temp directory
+        state_manager = SideBarStateMgr(key_storage_map, temp_dir)
 
-    # Different storage types
-    st.text_input("Persistant Text:", key='p_text')
-    st.text_input("Volatile Text:", key='v_text')
-    st.text_input("Normal Text:", key='text')
+        st.title("Example App To Demo State Manager")
 
-    # Display current state name
-    current_state_name = state_manager.get_current_state_name()
-    st.write(f"Current State: {current_state_name}")
+        # Different storage types
+        st.text_input("Persistant Text:", key='p_text')
+        st.text_input("Volatile Text:", key='v_text')
+        st.text_input("Normal Text:", key='text')
 
-    # Save it
-    state_manager.save_session_to_state()
+        # Display current state name
+        current_state_name = state_manager.get_current_state_name()
+        st.write(f"Current State: {current_state_name}")
+
+        # Save it
+        state_manager.save_session_to_state()
+    finally:
+        # Clean up the temporary directory
+        if os.path.exists(temp_dir):
+            shutil.rmtree(temp_dir)
+
 
 
 if __name__ == "__main__":

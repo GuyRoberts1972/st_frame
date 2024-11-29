@@ -39,7 +39,10 @@ class GenerateRequirementsTxt(ToolBase):
         with open(requirements_txt_path, 'w', encoding='utf-8') as out_file:
             out_file.writelines(filtered_lines)
 
-    def create_requirements_txt(self, folder : str=None, ignore_folders : list = None, save_path : str=None):
+    def create_requirements_txt(self,
+                                folder : str=None,
+                                ignore_folders : list = None,
+                                save_path : str=None):
         """ Use the list of source files to generate the requirements.txt """
 
         # Working directory as base path
@@ -51,7 +54,10 @@ class GenerateRequirementsTxt(ToolBase):
 
         # Construct the pipreqs command
         if ignore_folders is None:
-            pipreqs_command = ["pipreqs", "--savepath", save_path, "--force", folder]
+            pipreqs_command = [
+                "pipreqs", "--savepath",
+                save_path, "--force",
+                folder]
         else:
             # handle singleton
             if isinstance(ignore_folders, str):
@@ -59,7 +65,11 @@ class GenerateRequirementsTxt(ToolBase):
 
             # Make list and call
             ignore_list = ','.join(ignore_folders)
-            pipreqs_command = ["pipreqs", "--savepath", save_path, "--force", folder, "--ignore", ignore_list]
+            pipreqs_command = [
+                "pipreqs", "--savepath",
+                save_path, "--force",
+                folder, "--ignore",
+                ignore_list]
 
         try:
             # Execute the pipreqs command
@@ -104,5 +114,3 @@ if __name__ == "__main__":
 
     # Run an instance of the tool
     os._exit(GenerateRequirementsTxt().run())
-
-

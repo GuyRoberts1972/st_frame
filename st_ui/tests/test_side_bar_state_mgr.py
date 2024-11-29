@@ -3,7 +3,7 @@ import unittest
 import os
 import json
 import tempfile
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 import streamlit as st
 from st_ui.side_bar_state_mgr import SideBarStateMgr, example_usage
 
