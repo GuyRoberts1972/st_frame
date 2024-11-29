@@ -4,7 +4,7 @@ import os
 import tempfile
 import streamlit as st
 from streamlit_option_menu import option_menu
-from utils.storage_utils import LocalStorageBackend
+from utils.storage_utils import StorageBackend
 from st_ui.json_viewer import JSONViewer
 
 
@@ -34,7 +34,9 @@ class SideBarStateMgr:
 
         # Store
         self.key_storage_map = key_storage_map
-        self.storage = LocalStorageBackend(saved_states_dir)
+
+        # Get the storage class from factory
+        self.storage = StorageBackend.get_storage(saved_states_dir)
 
         # Handle state loading at the beginning of the script
         if 'sbsm_state_to_load' in st.session_state:

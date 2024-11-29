@@ -48,6 +48,7 @@ RUN chown -R root:root /app/local_data && \
 # Install Python dependencies
 RUN pip install --upgrade pip && \
     pip install --no-cache-dir -r utils/requirements.txt && \
+    pip install --no-cache-dir -r flow_apps/requirements.txt && \
     pip install --no-cache-dir -r st_ui/requirements.txt
 
 # Switch to a non-root user

@@ -1,11 +1,5 @@
 """ For use cases that provide analysis and summaries """
-import streamlit as st
-from utils.get_text import TxtGetter as TxtGetter
-from utils.step_utils import BaseFlowStep, StepConfigException
 from utils.app_utils import BaseFlowApp
-
-
-
 
 
 class SummaryFlowApp(BaseFlowApp):
@@ -13,7 +7,8 @@ class SummaryFlowApp(BaseFlowApp):
 
     @staticmethod
     def run(config, state_manager):
-        
+        """ Run the app """
+
         # Create app
         app = SummaryFlowApp(
             config=config,
@@ -31,9 +26,10 @@ class SummaryFlowApp(BaseFlowApp):
 
         # Done
         return app
-    
-if __name__ == '__main__':
-    
+
+def run_standalone():
+    """ Run the app standalone """
+
     # Example config
     config_yaml = """
     title: Example Summary App
@@ -43,7 +39,7 @@ if __name__ == '__main__':
         test_choose_llm:
             heading: Choose the LLM to test
             class: ChooseLLMFlavour
-    
+
         test_define_input_defs:
             heading: Test inputs
             class: DefineInputDataStep
@@ -52,7 +48,7 @@ if __name__ == '__main__':
                 other_text:
                     description: Paste relevant text Emails or Teams chats here
                     type: free_form_text
-                jira_issues_list: 
+                jira_issues_list:
                     description: Enter some jira issues
                     type: jira_issues
 
@@ -86,12 +82,12 @@ if __name__ == '__main__':
                 language: summary_options.language
             template: |
                 You are an assistant that is good at summarising text.
-                You will be given some text to summarise. 
+                You will be given some text to summarise.
                 Use the guidance below to do that:
-                {summary_type} 
+                {summary_type}
                 {language}
                 Then work with the human to refine to a final draft
-        
+
         initial_human_prompt:
             heading: Human prompt for chat loop
             class: FormatPromptStep
@@ -99,7 +95,7 @@ if __name__ == '__main__':
                 other_text: retrieve_data.other_text
                 jira_issues_list: retrieve_data.jira_issues_list
             template: |
-                Please summarise the below text 
+                Please summarise the below text
                 ---- START: FREE FORM TEXT ----
                 {other_text}
                 ---- END: FREE FORM TEXT ----
@@ -128,3 +124,7 @@ if __name__ == '__main__':
 
     # Run the example app
     SummaryFlowApp.run(config, StubStatemanager())
+
+if __name__ == '__main__':
+
+    run_standalone()

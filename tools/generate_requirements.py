@@ -39,7 +39,7 @@ class GenerateRequirementsTxt(ToolBase):
         with open(requirements_txt_path, 'w', encoding='utf-8') as out_file:
             out_file.writelines(filtered_lines)
 
-    def create_requirements_txt(self, folder, save_path=None):
+    def create_requirements_txt(self, folder : str=None, ignore_folders : list = None, save_path : str=None):
         """ Use the list of source files to generate the requirements.txt """
 
         # Working directory as base path
@@ -50,7 +50,16 @@ class GenerateRequirementsTxt(ToolBase):
             save_path = os.path.join(folder, "requirements.txt")
 
         # Construct the pipreqs command
-        pipreqs_command = ["pipreqs", "--savepath", save_path, "--force", folder]
+        if ignore_folders is None:
+            pipreqs_command = ["pipreqs", "--savepath", save_path, "--force", folder]
+        else:
+            # handle singleton
+            if isinstance(ignore_folders, str):
+                ignore_folders = [ignore_folders]
+
+            # Make list and call
+            ignore_list = ','.join(ignore_folders)
+            pipreqs_command = ["pipreqs", "--savepath", save_path, "--force", folder, "--ignore", ignore_list]
 
         try:
             # Execute the pipreqs command
@@ -67,14 +76,26 @@ class GenerateRequirementsTxt(ToolBase):
 
         self.setup_python_path()
 
-        if self.get_argument_value("--generate"):
-            self.create_requirements_txt('utils')
-            self.create_requirements_txt('st_ui')
-            self.create_requirements_txt('tools')
-        else:
-            print('Please specify the type of requirements to generate')
-            self.print_usage()
-            return False
+        # Generate a requirements.txt for production code in each subdir
+        # ignore tests folder
+        subfolders_with_code = self.get_folders_with_python_files()
+        for subfolder in subfolders_with_code:
+            cwd = self.get_base_path()
+            self.create_requirements_txt(
+                folder=f'{cwd}/{subfolder}',
+                ignore_folders='tests')
+
+        # Top level - everything other than tests
+        self.create_requirements_txt(
+            folder=f'{cwd}',
+            ignore_folders=['.venv', 'tests'],
+            save_path=f'{cwd}/requirements.txt')
+
+        # Needed for tests - ignore virtual env but do not
+        self.create_requirements_txt(
+            folder=f'{cwd}',
+            ignore_folders='.venv',
+            save_path=f'{cwd}/requirements_tests.txt')
 
         return True
 
