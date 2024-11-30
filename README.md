@@ -51,9 +51,9 @@ Ready to use reference implementations
 
 ## Configuration
 Custom configuration covers:
-- Prompt Template Library
-- State Storage Location
-- Connectivity Secrets
+- Prompt Template Library (local, s3 or todo:github)
+- State Storage Location (local or s3)
+- Connectivity Secrets (atlassian, todo: Office365)
 - Model Library - the flavours of LLMs that can be used
 
 Specified at deploy time as a pointer to an AWS SSM param store path.

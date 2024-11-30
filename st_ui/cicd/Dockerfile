@@ -41,7 +41,7 @@ RUN useradd -m appuser
 RUN chown -R root:root /app/local_data && \
     chmod -R 755 /app/local_data && \
     mkdir -p /app/local_data/data/saved_states && \
-    rm -rf /app/local_data/data/saved_states* && \
+    rm -rf /app/local_data/data/saved_states/* && \
     chown appuser:appuser /app/local_data/data && \
     chmod 775 /app/local_data/data
 
@@ -55,7 +55,7 @@ RUN pip install --upgrade pip && \
 USER appuser
 
 # Expose Streamlit default port
-EXPOSE 8501
+EXPOSE 8080
 
 # Command to run the Streamlit app
-CMD ["streamlit", "run", "st_ui/app.py", "--server.port=8501", "--server.enableCORS=false"]
+CMD ["streamlit", "run", "st_ui/app.py", "--server.port=8080", "--server.enableCORS=false"]
