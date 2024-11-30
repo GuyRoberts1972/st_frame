@@ -41,7 +41,7 @@ RUN useradd -m appuser
 RUN chown -R root:root /app/local_data && \
     chmod -R 755 /app/local_data && \
     mkdir -p /app/local_data/data/saved_states && \
-    rm -rf /app/local_data/data/saved_states* && \
+    rm -rf /app/local_data/data/saved_states/* && \
     chown appuser:appuser /app/local_data/data && \
     chmod 775 /app/local_data/data
 
