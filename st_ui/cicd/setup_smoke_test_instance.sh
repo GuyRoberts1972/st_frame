@@ -15,4 +15,4 @@ fi
 
 # Run the image
 echo "running $IMAGE_NAME:${IMAGE_TAG:-latest}"
-docker run -d --name $TEST_INSTANCE_NAME -p 8501:8501 $IMAGE_NAME:${IMAGE_TAG:-latest}
+docker run -d --name $TEST_INSTANCE_NAME -p 8080:8080 $IMAGE_NAME:${IMAGE_TAG:-latest}

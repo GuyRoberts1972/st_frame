@@ -55,7 +55,7 @@ RUN pip install --upgrade pip && \
 USER appuser
 
 # Expose Streamlit default port
-EXPOSE 8501
+EXPOSE 8080
 
 # Command to run the Streamlit app
-CMD ["streamlit", "run", "st_ui/app.py", "--server.port=8501", "--server.enableCORS=false"]
+CMD ["streamlit", "run", "st_ui/app.py", "--server.port=8080", "--server.enableCORS=false"]

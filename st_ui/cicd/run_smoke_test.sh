@@ -3,7 +3,7 @@
 # Configurable parameters
 TIMEOUT=10
 CHECK_STRING="You need to enable JavaScript to run this app"
-URL="http://localhost:8501"
+URL="http://localhost:8080"
 
 # Function to determine if script is running in GitHub Actions
 is_github_actions() {
