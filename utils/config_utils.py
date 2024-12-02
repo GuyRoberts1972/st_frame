@@ -70,16 +70,29 @@ class ConfigParamRetriever:
     def __parse_section_helper(self, value):
         """ Parse the section value as JSON or TOML. """
 
-        stripped_value = value.lstrip()
-        if stripped_value.startswith("{"):
-            # Parse as JSON
-            ret_val = json.loads(value)
-        else:
-            # Parse as TOML
-            ret_val = toml.loads(value)
+        try:
+            stripped_value = value.lstrip()
+            if stripped_value.startswith("{"):
+                # Parse as JSON
+                ret_val = json.loads(value)
+            else:
+                # Parse as TOML
+                ret_val = toml.loads(value)
 
-        # Done
-        return ret_val
+            # Done
+            return ret_val
+
+        except json.JSONDecodeError as json_err:
+            error_message = f"Invalid JSON in config '{self.config_path}': {str(json_err)}"
+            raise ValueError(error_message) from json_err
+
+        except toml.TomlDecodeError as toml_err:
+            error_message = f"Invalid TOML in config '{self.config_path}': {str(toml_err)}"
+            raise ValueError(error_message) from toml_err
+
+        except Exception as e:
+            error_message = f"Unexpected error parsing config '{self.config_path}': {str(e)}"
+            raise ValueError(error_message) from e
 
     @lru_cache(maxsize=10)
     def _fetch_section_from_local(self, key):

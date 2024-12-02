@@ -7,6 +7,7 @@ from st_ui.side_bar_state_mgr import SideBarStateMgr
 from st_ui.option_selector import OptionSelector
 from st_ui.json_viewer import JSONViewer
 from st_ui.floating_footer import FloatingFooter
+from st_ui.auth import AuthBase
 from utils.yaml_utils import YAMLUtils
 from utils.config_utils import ConfigStore
 
@@ -150,11 +151,27 @@ def show_version_and_config():
     footer_text = ConfigStore.get_config_status_string()
     FloatingFooter.show(footer_text)
 
+def handle_user_auth():
+    """ Handle authentication - return true to proceed with rest of app """
+
+    # Get the appropriate auth object
+    auth = AuthBase.get_auth()
+
+    # Use the auth object
+    if not auth.is_authorized():
+        auth.login_prompt()
+        return False
+    return True
+
 def main():
     """ Main execution """
 
     # Wide
     st.set_page_config(layout="wide", page_icon='\U0001F680')
+
+    # Check auth
+    if not handle_user_auth():
+        return
 
     # Check if we should display the JSON viewer
     json_viewer = JSONViewer()

@@ -7,6 +7,7 @@ import streamlit as st
 from streamlit_option_menu import option_menu
 from utils.storage_utils import StorageBackend
 from st_ui.json_viewer import JSONViewer
+from st_ui.auth import AuthBase
 
 
 class SideBarStateMgr:
@@ -14,6 +15,7 @@ class SideBarStateMgr:
 
     # Class-level string table
     STRINGS = {
+        'USER_LOGOUT': "Logout",
         'CREATE_NEW_STATE': "New Session",
         'ACTIONS_HEADING' : 'Session Actions',
         'STATE_NAV_HEADING' : 'Session History',
@@ -217,6 +219,51 @@ class SideBarStateMgr:
                 manual_select=manual_select
             )
 
+    def create_container(self, heading, container_key):
+        """ Create a containe for widgets with styling """
+
+        # Custom styling for the container
+        css_template = f"""
+            <style>
+            /* The container */
+            .st-key-{container_key} {{
+                border: 2px solid white;
+                padding: 20px;
+                border-radius: .5rem;
+                background-color: white;
+            }}
+
+            /* Get rid of text box message */
+            .st-key-{container_key} .stTextInput {{
+                width: fit-content;
+            }}
+
+            /* Grey background for edit input */
+            .st-key-{container_key} input {{
+                background-color: rgb(240, 242, 246);
+            }}
+
+            /* Hide the 'press enter to apply' */
+            .st-key-sbsm_rename_state_edit div[data-testid="InputInstructions"] {{
+                visibility: hidden;
+            }}
+
+            /* Make the  title fit & match */
+            .st-key-{container_key} hr {{
+                width: 90%;
+                background-color: rgb(227 231 241);
+            }}
+            </style>
+        """
+
+        # Inject the CSS with the container_key
+        st.markdown(css_template, unsafe_allow_html=True)
+
+        # Create and return
+        container = st.container(key=container_key)
+        container.subheader(heading, divider='grey')
+        return container
+
     def setup_sidebar(self):
         """ Main function to set the side bar up """
 
@@ -357,44 +404,19 @@ class SideBarStateMgr:
         # Render
         with st.sidebar:
 
-            # Custom styling for actions
-            st.markdown("""
-                <style>
-
-                /* The custom actions box */
-                .st-key-custom_action_container {
-                    border: 2px solid white;
-                    padding: 20px;
-                    border-radius: .5rem;
-                    background-color: white;
-                }
-
-                /* Get rid of the little message */
-                .st-key-custom_action_container .stTextInput {
-                    width: fit-content;
-                }
-
-                /* Grey background for the edit input */
-                .st-key-custom_action_container input {
-                    background-color: rgb(240, 242, 246);
-                }
-
-                /* Hide the 'press enter to apply' */
-                .st-key-sbsm_rename_state_edit div[data-testid="InputInstructions"] {
-                    visibility: hidden;
-                }
-
-                /* Make the action title underline fit & match */
-                .st-key-custom_action_container hr {
-                    width: 90%;
-                    background-color: rgb(227 231 241);
-                }
-
-            </style>
-            """, unsafe_allow_html=True)
+            # Container for user
+            user_name = AuthBase.get_auth().get_username()
+            user_heading = f"User: {user_name}"
+            user_container = self.create_container(user_heading, 'customer_user_container')
+            with user_container:
+                # Logout
+                if st.button(SideBarStateMgr.STRINGS['USER_LOGOUT']):
+                    AuthBase.clear_auth()
+                    st.rerun()
 
             # Container for actions and related widgets
-            action_container = st.container(key='custom_action_container')
+            actions_heading = SideBarStateMgr.STRINGS['ACTIONS_HEADING']
+            action_container = self.create_container(actions_heading, 'custom_action_container')
             with action_container:
 
                 # Our actions
@@ -423,8 +445,6 @@ class SideBarStateMgr:
                     )
 
                 # Actions button and selector
-                actions_heading = SideBarStateMgr.STRINGS['ACTIONS_HEADING']
-                st.subheader(actions_heading, divider='grey')
                 col1, col2 = st.columns(2)
                 with col1:
                     if st.button(new_session_action):

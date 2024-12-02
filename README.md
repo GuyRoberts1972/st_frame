@@ -7,7 +7,7 @@
 A set of tools for managing and using templated prompt flows across different data sources and models.
 
 # Why
-Privacy. Choice. Customisaation. Specific domain and tribal knowledge.
+Fun. Privacy. Choice. Customisation. Specific domain and tribal knowledge.
 
 # Features
 - Extensible template libray from which flows can be created and customised
@@ -17,6 +17,9 @@ Privacy. Choice. Customisaation. Specific domain and tribal knowledge.
 - todo: Publish and share flows for others to use via UI or API.
 
 # Key Concepts
+Data: Authorised, connected, indexed.
+Exploration: Templated processing of data with a selection of models.
+Output: Sharable. Publishable.
 
 ## Prompt Flow Templates
 Definitions of common patterns that bring data sources, user input, LLM models and (todo: actions)
