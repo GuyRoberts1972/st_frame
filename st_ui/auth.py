@@ -186,9 +186,22 @@ class BasicAuth(AuthBase):
             time.sleep(2)
 
     @staticmethod
-    def generate_password_hash(plain_text_password):
+    def generate_password_hash(plain_text_password: str, work_factor: int = 12) -> str:
         """ Generate a hashed password for storage. """
-        hashed = bcrypt.hashpw(plain_text_password.encode(), bcrypt.gensalt())
-        return hashed.decode()  # Convert to string for storage
+        try:
+            if not isinstance(plain_text_password, str):
+                raise ValueError("Password must be a string")
 
+            # Encode the password to bytes
+            password_bytes = plain_text_password.encode('utf-8')
 
+            # Generate salt and hash
+            salt = bcrypt.gensalt(rounds=work_factor)
+            hashed = bcrypt.hashpw(password_bytes, salt)
+
+            # Return the hashed password as a string
+            return hashed.decode('utf-8')
+        except Exception as e:
+            # Log the error or handle it as appropriate for your application
+            print(f"Error hashing password: {e}")
+            raise  # Re-raise the exception after logging

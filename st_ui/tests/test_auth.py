@@ -42,20 +42,20 @@ class TestIAPAuth(unittest.TestCase):
 
     @patch.object(ConfigStore, 'nested_get', return_value='X-User')
     @patch('st_ui.auth._get_websocket_headers')
-    def test_init_with_valid_header(self, mock_get_headers, mock_config):
+    def test_init_with_valid_header(self, mock_get_headers, _mock_config):
         mock_get_headers.return_value = {'X-User': 'test_user'}
         auth = IAPAuth()
         self.assertEqual(auth.username, 'test_user')
 
     @patch.object(ConfigStore, 'nested_get', return_value=None)
-    def test_init_with_missing_config(self, mock_config):
+    def test_init_with_missing_config(self, _mock_config):
         with self.assertRaises(ValueError):
             IAPAuth()
 
 class TestBasicAuth(unittest.TestCase):
 
     @patch.object(ConfigStore, 'nested_get')
-    def setUp(self, mock_config):
+    def setUp(self, mock_config): #pylint: disable=arguments-differ
         mock_config.return_value = {
             'user1': BasicAuth.generate_password_hash('password1'),
             'user2': BasicAuth.generate_password_hash('password2')
