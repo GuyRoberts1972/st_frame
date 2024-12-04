@@ -167,7 +167,7 @@ def main():
     """ Main execution """
 
     # Wide
-    st.set_page_config(layout="wide", page_icon='\U0001F680')
+    st.set_page_config(layout="wide", page_icon='\U0001F411')
 
     # Check auth
     if not handle_user_auth():

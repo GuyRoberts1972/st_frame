@@ -186,7 +186,7 @@ class BasicAuth(AuthBase):
             time.sleep(2)
 
     @staticmethod
-    def generate_password_hash(plain_text_password: str, work_factor: int = 12) -> str:
+    def generate_password_hash(plain_text_password: str) -> str:
         """ Generate a hashed password for storage. """
         try:
             if not isinstance(plain_text_password, str):
@@ -196,7 +196,7 @@ class BasicAuth(AuthBase):
             password_bytes = plain_text_password.encode('utf-8')
 
             # Generate salt and hash
-            salt = bcrypt.gensalt(rounds=work_factor)
+            salt = bcrypt.gensalt()
             hashed = bcrypt.hashpw(password_bytes, salt)
 
             # Return the hashed password as a string

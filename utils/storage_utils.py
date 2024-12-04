@@ -53,9 +53,9 @@ class StorageBackend(ABC):
             parts = storage_path.split('|')
             if not parts[0]:
                 raise ValueError("Invalid S3 storage path: bucket name is required.")
-            bucket_name = parts[0]
+            s3_path = parts[0]
             region_name = parts[1] if len(parts) > 1 else None
-            return S3StorageBackend(bucket_name, region_name)
+            return S3StorageBackend(s3_path, region_name)
 
         # Check for local storage
         if storage_path.startswith("local::"):
@@ -143,10 +143,13 @@ class LocalStorageBackend(StorageBackend):
 class S3StorageBackend(StorageBackend):
     """ S3-based storage backend """
 
-    def __init__(self, bucket_name, region_name=None):
+    def __init__(self, path, region_name=None):
         super().__init__()
-        self.bucket_name = bucket_name
-        self.s3_client = boto3.client( 's3', region_name=region_name)
+        parts = path.split('/')
+        self.bucket_name = parts[0]
+        self.folder = '/'.join(parts[1:]) if len(parts) > 1 else ''
+        self.s3_client = boto3.client('s3', region_name=region_name)
+        self._check_bucket_exists()
 
     def _check_bucket_exists(self):
         """ Check if the S3 bucket exists """
@@ -158,7 +161,10 @@ class S3StorageBackend(StorageBackend):
 
     def _normalize_path(self, path: str) -> str:
         """ Ensure path consistency for S3 keys """
-        return path.lstrip("/")
+        normalized = path.lstrip("/")
+        if self.folder:
+            normalized = f"{self.folder.rstrip('/')}/{normalized}"
+        return normalized
 
     def read_binary(self, path: str) -> bytes:
         """ Read a binary file from S3 """
@@ -211,18 +217,27 @@ class S3StorageBackend(StorageBackend):
 
     def list_files(self, folder: str) -> list:
         """ List files in a folder or the root if an empty string is passed """
-        prefix = self._normalize_path(folder).rstrip("/") + "/" if folder else ""
+        prefix = self._normalize_path(folder).rstrip("/") + "/" if folder else self.folder
         try:
             response = self.s3_client.list_objects_v2(Bucket=self.bucket_name, Prefix=prefix)
             if 'Contents' not in response:
                 return []
-            # Filter to only return files directly in the specified folder or root
-            files = [
-                obj['Key'] for obj in response['Contents']
-                if not obj['Key'].rstrip("/").endswith("/") and (
-                    folder == "" or "/" not in obj['Key'][len(prefix):]
-                )
-            ]
+
+            files = []
+            for obj in response['Contents']:
+                key = obj['Key']
+                relative_path = key[len(prefix):].lstrip('/')
+
+                # Skip if it's a directory (ends with '/')
+                if key.endswith('/'):
+                    continue
+
+                # Skip if it's in a subfolder
+                if '/' in relative_path:
+                    continue
+
+                files.append(relative_path)
+
             return files
         except ClientError as exc:
             err_msg = f"Could not list files in folder {folder}: {exc}"

@@ -68,22 +68,26 @@ class TestBasicAuth(unittest.TestCase):
     def test_get_username_initial(self):
         self.assertIsNone(self.auth.get_username())
 
+    @patch('time.sleep')
     @patch('streamlit.text_input')
     @patch('streamlit.button')
-    def test_login_prompt_success(self, mock_button, mock_text_input):
+    def test_login_prompt_success(self, mock_button, mock_text_input, mock_sleep):
         mock_text_input.side_effect = ['user1', 'password1']
         mock_button.return_value = True
+        mock_sleep.return_value = None
 
         self.auth.login_prompt()
 
         self.assertTrue(self.auth.is_authorized())
         self.assertEqual(self.auth.get_username(), 'user1')
 
+    @patch('time.sleep')
     @patch('streamlit.text_input')
     @patch('streamlit.button')
-    def test_login_prompt_failure(self, mock_button, mock_text_input):
+    def test_login_prompt_failure(self, mock_button, mock_text_input, mock_sleep):
         mock_text_input.side_effect = ['user1', 'wrong_password']
         mock_button.return_value = True
+        mock_sleep.return_value = None
 
         self.auth.login_prompt()
 
