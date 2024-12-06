@@ -4,7 +4,7 @@ import subprocess
 from tool_utils import  ToolBase # pylint: disable=import-error
 
 class GenerateRequirementsTxt(ToolBase):
-    """ Tool class to scan for non ascii in python files """
+    """ Tool class to generate pip freeze style requirements.txt for components """
 
     def __init__(self):
 
