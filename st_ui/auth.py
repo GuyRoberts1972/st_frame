@@ -2,15 +2,17 @@
 from abc import ABC, abstractmethod
 import time
 import logging
-import bcrypt
 import streamlit as st
 from streamlit.web.server.websocket_headers import _get_websocket_headers
+from argon2 import PasswordHasher, exceptions
 from utils.config_utils import ConfigStore
 
-class AuthBase(ABC):
-    """ Abstract base fo ruther authentication types """
+ph = PasswordHasher()
 
-    # The session state key to persist the aut object instance
+class AuthBase(ABC):
+    """ Abstract base for further authentication types """
+
+    # The session state key to persist the auth object instance
     AUTH_INSTANCE_KEY = "AuthBase::auth_instance"
 
     @abstractmethod
@@ -154,7 +156,6 @@ class BasicAuth(AuthBase):
 
             if login_button:
                 try:
-
                     # Get the credentials stored for this user
                     user_credentials = self.credentials.get(username)
                     if user_credentials is None:
@@ -165,43 +166,33 @@ class BasicAuth(AuthBase):
                         for key in keys:
                             user_credentials = user_credentials[key]
 
-                    # Verify password with bcrypt
-                    stored_password_hash = user_credentials
-                    if bcrypt.checkpw(
-                            password.encode('utf-8'),
-                            stored_password_hash.encode('utf-8')):
+                    # Verify password with Argon2
+                    try:
+                        ph.verify(user_credentials, password)
                         self.username = username
                         self.authorized = True
                         st.success("Login successful!")
-                        self.authorized = True
                         st.rerun()
-                    else:
+                    except exceptions.InvalidHashError:
                         st.error("Invalid username or password")
-                        logging.warning(f"failed login attempt for {username} - invalid password ")
+                        logging.error(f"Failed login attempt for {username} - invalid password hash.")
+                    except exceptions.VerifyMismatchError:
+                        st.error("Invalid username or password")
+                        logging.warning(f"Failed login attempt for {username} - invalid password.")
                 except (KeyError, TypeError):
                     st.error("Invalid username or password")
-                    logging.warning(f"failed login attempt for {username} - invalid username ")
+                    logging.warning(f"Failed login attempt for {username} - invalid username.")
 
             # Tarpit
             time.sleep(2)
 
     @staticmethod
     def generate_password_hash(plain_text_password: str) -> str:
-        """ Generate a hashed password for storage. """
+        """ Generate a hashed password for storage using Argon2. """
         try:
             if not isinstance(plain_text_password, str):
                 raise ValueError("Password must be a string")
-
-            # Encode the password to bytes
-            password_bytes = plain_text_password.encode('utf-8')
-
-            # Generate salt and hash
-            salt = bcrypt.gensalt()
-            hashed = bcrypt.hashpw(password_bytes, salt)
-
-            # Return the hashed password as a string
-            return hashed.decode('utf-8')
+            return ph.hash(plain_text_password)
         except Exception as e:
-            # Log the error or handle it as appropriate for your application
             print(f"Error hashing password: {e}")
-            raise  # Re-raise the exception after logging
+            raise

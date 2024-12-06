@@ -3,7 +3,7 @@ import os
 from tool_utils import  ToolBase # pylint: disable=import-error
 from st_ui.auth import  BasicAuth
 
-class PasswordHashGenerato(ToolBase):
+class PasswordHashGenerator(ToolBase):
     """ Tool class to generate password hash """
 
     def run(self):
@@ -17,10 +17,10 @@ class PasswordHashGenerato(ToolBase):
             print(f"Hashed Password: {hashed_password}\n")
 
         # Zero is ok
-        print('Docs generated')
+        print('Password generated')
         return 0
 
 if __name__ == "__main__":
 
     # Run an instance of the tool
-    os._exit(PasswordHashGenerato().run())
+    os._exit(PasswordHashGenerator().run())
