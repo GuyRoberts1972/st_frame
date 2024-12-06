@@ -1,10 +1,10 @@
 atlassian_python_api==3.41.16
 beautifulsoup4==4.12.3
-boto3==1.35.38
-botocore==1.35.38
-langchain_aws==0.2.7
-langchain_community==0.3.8
-langchain_core==0.3.21
+boto3==1.35.76
+botocore==1.35.76
+langchain_aws==0.2.9
+langchain_community==0.3.9
+langchain_core==0.3.22
 pandas==2.2.3
 pypdf==5.1.0
 python_docx==1.1.2

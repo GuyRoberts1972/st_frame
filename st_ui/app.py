@@ -7,70 +7,59 @@ from st_ui.side_bar_state_mgr import SideBarStateMgr
 from st_ui.option_selector import OptionSelector
 from st_ui.json_viewer import JSONViewer
 from st_ui.floating_footer import FloatingFooter
-from utils.yaml_utils import YAMLUtils
+from st_ui.auth import AuthBase
 from utils.config_utils import ConfigStore
+from utils.template_mgr import TemplateManager
 
-def load_yaml_file(file_path):
-    """ Load the YAML with includes and ref resolution """
 
-    base_dir = get_base_dir()
-
-    # Existing usage
-    templates_include_lib = ConfigStore.nested_get('paths.templates_include_lib')
-    include_lib_path = os.path.join(base_dir, templates_include_lib)
-    include_lib_path = os.path.normpath(include_lib_path)
-    data = YAMLUtils.load_yaml(file_path, include_lib_path)
-    return data
 
 def get_base_dir():
     """ Get the base directory for the app"""
     base_dir = os.getcwd()
     return base_dir
 
-def generate_groups(relative_path=""):
-    """ Generate the groups of templates for the user to start a session """
-    options = {}
+def handle_template_selection():
+    ''' show the use case selection if not selected '''
 
-    base_dir = get_base_dir()
-    full_path = os.path.join(base_dir, relative_path)
+    # Early out if we have a selected use case
+    if None is not st.session_state.get('pdata_selected_use_case_path'):
+        return True
 
-    for item in os.listdir(full_path):
-        item_path = os.path.join(full_path, item)
-        if os.path.isdir(item_path):
-            meta_file = os.path.join(item_path, '_meta.yaml')
-            if os.path.exists(meta_file):
-                meta_data = load_yaml_file(meta_file)
-                options[item] = {
-                    "icon": meta_data.get("icon", ""),
-                    "title": meta_data.get("title", ""),
-                    "description": meta_data.get("description", "")
-                }
+    # Create a template manager
+    template_manager = TemplateManager()
+    options = template_manager.generate_groups()
 
-    return options
+    # Callback: Folder contents
+    def get_sub_options(option_key):
+        templates = template_manager.get_group_templates(option_key)
+        return templates
 
-def get_group_templates(subfolder, relative_path=""):
-    """ Get the templates in the group """
-    items = {}
-    base_dir = get_base_dir()
-    full_path = os.path.join(base_dir, relative_path, subfolder)
+    # Callback: Select
+    def on_select(option_key, sub_option_key, _sub_option_dict):
+        st.session_state.pdata_selected_use_case_path = os.path.join(option_key, sub_option_key)
+        options_selector.clear_state()
+        st.rerun()
 
-    if not os.path.isdir(full_path):
-        return items
+    # Callback: Cancel
+    def on_cancel():
+        pass
 
-    for file in os.listdir(full_path):
-        if file.endswith('.yaml') and not file.startswith('_'):
-            file_path = os.path.join(full_path, file)
-            item_data = load_yaml_file(file_path)
+    # Create selector and set strings
+    options_selector = OptionSelector(options, get_sub_options, on_select, on_cancel)
+    options_selector.STRINGS.update({
+        "TITLE": "Create New Session",
+        "SUB_OPTION_PROMPT": "Select your use case:",
+        "ACTION_CONFIRM_BUTTON": "Confirm",
+        "BACK_BUTTON": "Back",
+        "SUCCESS_MESSAGE": "You selected {sub_option} from {main_option}!",
+        "DISABLED_OPTION": "{option} (Coming Soon)"
+    })
 
-            # Use the filename (without extension) as the key
-            item_key = os.path.splitext(file)[0]
-            items[item_key] = {
-                "title": item_data.get("title", ""),
-                "description": item_data.get("description", ""),
-                "enabled": item_data.get("enabled", False)
-            }
+    # Render
+    options_selector.render()
 
-    return items
+    # Not selected yet
+    return False
 
 def load_and_run_static_method(relative_path, class_name, method_name, *args, **kwargs):
     """ load the class from the file and run the static method with the params """
@@ -102,59 +91,33 @@ def load_and_run_static_method(relative_path, class_name, method_name, *args, **
     # Call the method with the provided arguments
     return target_method(*args, **kwargs)
 
-def handle_template_selection(template_folder):
-    ''' show the use case selection if not selected '''
-
-    # Early out if we have a selected use case
-    if None is not st.session_state.get('pdata_selected_use_case_path'):
-        return True
-
-    # Load the template folders
-    options = generate_groups(template_folder)
-
-    # Callback: Folder contents
-    def get_sub_options(option_key):
-        templates = get_group_templates(option_key, template_folder)
-        return templates
-
-    # Callback: Select
-    def on_select(option_key, sub_option_key, _sub_option_dict):
-        st.session_state.pdata_selected_use_case_path = os.path.join(option_key, sub_option_key)
-        options_selector.clear_state()
-        st.rerun()
-
-    # Callback: Cancel
-    def on_cancel():
-        pass
-
-    # Create selector and set strings
-    options_selector = OptionSelector(options, get_sub_options, on_select, on_cancel)
-    options_selector.STRINGS.update({
-        "TITLE": "Create New Session",
-        "SUB_OPTION_PROMPT": "Select your use case:",
-        "ACTION_CONFIRM_BUTTON": "Confirm",
-        "BACK_BUTTON": "Back",
-        "SUCCESS_MESSAGE": "You selected {sub_option} from {main_option}!",
-        "DISABLED_OPTION": "{option} (Coming Soon)"
-    })
-
-    # Render
-    options_selector.render()
-
-    # Not selected yet
-    return False
-
 def show_version_and_config():
     """ Show some version and config info in the footer """
 
     footer_text = ConfigStore.get_config_status_string()
     FloatingFooter.show(footer_text)
 
+def handle_user_auth():
+    """ Handle authentication - return true to proceed with rest of app """
+
+    # Get the appropriate auth object
+    auth = AuthBase.get_auth()
+
+    # Use the auth object
+    if not auth.is_authorized():
+        auth.login_prompt()
+        return False
+    return True
+
 def main():
     """ Main execution """
 
     # Wide
-    st.set_page_config(layout="wide", page_icon='\U0001F680')
+    st.set_page_config(layout="wide", page_icon='\U0001F411')
+
+    # Check auth
+    if not handle_user_auth():
+        return
 
     # Check if we should display the JSON viewer
     json_viewer = JSONViewer()
@@ -164,16 +127,14 @@ def main():
         key_storage_map = { 'persistant' : ['pdata_*'], 'volatile' : ['vdata_*']}
         saved_states_dir = ConfigStore.nested_get('paths.saved_states')
         state_manager = SideBarStateMgr(key_storage_map, saved_states_dir)
-        template_folder = ConfigStore.nested_get('paths.use_case_templates')
-        if handle_template_selection(template_folder):
-            # Run the app using the YAML
+
+        # Load template
+        if handle_template_selection():
+            # Template chosen - run the app using the YAML
             try:
                 # Load the template
                 relative_path = st.session_state.pdata_selected_use_case_path
-                base_dir = get_base_dir()
-                abs_path = os.path.join(base_dir, template_folder, relative_path)
-                abs_path = os.path.normpath(abs_path) + '.yaml'
-                config = load_yaml_file(abs_path)
+                config = TemplateManager().load_template(relative_path)
 
                 # Run the method - use defaults for source file and method based on app name
                 class_name = config['flow_app']

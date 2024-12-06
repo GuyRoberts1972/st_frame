@@ -36,14 +36,18 @@ COPY local_data ./local_data
 RUN useradd -m appuser
 
 # Set permissions for local_data
-# - Give read-only access to everything in /app/local_data/*
-# - Empty /app/local_data/data if it exists; otherwise create it
+# - Grant read-only access to all directories and files under /app/local_data/*
+# - Ensure /app/local_data/data exists and is writable by appuser
+# - Ensure /app/local_data/data/saved_states exists, is empty, and writable by appuser
+
 RUN chown -R root:root /app/local_data && \
     chmod -R 755 /app/local_data && \
     mkdir -p /app/local_data/data/saved_states && \
     rm -rf /app/local_data/data/saved_states/* && \
     chown appuser:appuser /app/local_data/data && \
-    chmod 775 /app/local_data/data
+    chmod 775 /app/local_data/data && \
+    chown appuser:appuser /app/local_data/data/saved_states && \
+    chmod 775 /app/local_data/data/saved_states
 
 # Install Python dependencies
 RUN pip install --upgrade pip && \

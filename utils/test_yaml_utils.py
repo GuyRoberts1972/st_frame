@@ -4,6 +4,7 @@ import tempfile
 import shutil
 import unittest
 from utils.yaml_utils import YAMLUtils, YAMLKeyResolver
+from utils.storage_utils import StorageBackend
 
 class TestMergeNested(unittest.TestCase):
 
@@ -221,21 +222,30 @@ class TestYAMLKeyResolver(unittest.TestCase):
 
 class TestYAMLUtils(unittest.TestCase):
     def setUp(self):
+
+        # Create directories
         self.test_dir = tempfile.mkdtemp()
         self.lib_dir = os.path.join(self.test_dir, 'lib')
         os.makedirs(self.lib_dir)
 
+        # Make the YAML object with the storage
+        use_case_templates_store = StorageBackend.get_storage(self.test_dir)
+        templates_include_lib_store = StorageBackend.get_storage(self.lib_dir)
+        self.yaml_utils = YAMLUtils(use_case_templates_store, templates_include_lib_store)
+
     def tearDown(self):
         shutil.rmtree(self.test_dir)
 
-    def test_load_yaml_without_includes(self):
+    def test_001_load_yaml_without_includes(self):
         content = "key: value\nlist:\n  - item1\n  - item2"
         file_path = os.path.join(self.test_dir, 'test.yaml')
         with open(file_path, 'w', encoding='utf-8') as f:
             f.write(content)
 
-        result = YAMLUtils.load_yaml_with_includes(file_path, self.lib_dir)
+
+        result = self.yaml_utils.load_yaml_with_includes('test.yaml')
         self.assertEqual(result, {'key': 'value', 'list': ['item1', 'item2']})
+
 
     def test_load_yaml_with_local_include(self):
         include_content = "included_key: included_value"
@@ -248,7 +258,7 @@ class TestYAMLUtils(unittest.TestCase):
         with open(main_file, 'w', encoding='utf-8') as f:
             f.write(main_content)
 
-        result = YAMLUtils.load_yaml_with_includes(main_file, self.lib_dir)
+        result = self.yaml_utils.load_yaml_with_includes('main.yaml')
         self.assertEqual(result, {'key': 'value', 'included_key': 'included_value'})
 
     def test_load_yaml_with_lib_include(self):
@@ -262,7 +272,7 @@ class TestYAMLUtils(unittest.TestCase):
         with open(main_file, 'w', encoding='utf-8') as f:
             f.write(main_content)
 
-        result = YAMLUtils.load_yaml_with_includes(main_file, self.lib_dir)
+        result = self.yaml_utils.load_yaml_with_includes('main.yaml')
         self.assertEqual(result, {'key': 'value', 'lib_key': 'lib_value'})
 
     def test_invalid_local_include(self):
@@ -272,16 +282,25 @@ class TestYAMLUtils(unittest.TestCase):
             f.write(content)
 
         with self.assertRaises(ValueError):
-            YAMLUtils.load_yaml_with_includes(file_path, self.lib_dir)
+            self.yaml_utils.load_yaml_with_includes('test.yaml')
 
     def test_invalid_lib_include(self):
-        content = "#!lib_include ../invalid.yaml"
+        content = "#!lib_include ../go_up.yaml"
         file_path = os.path.join(self.test_dir, 'test.yaml')
         with open(file_path, 'w', encoding='utf-8') as f:
             f.write(content)
 
         with self.assertRaises(ValueError):
-            YAMLUtils.load_yaml_with_includes(file_path, self.lib_dir)
+            self.yaml_utils.load_yaml_with_includes('test.yaml')
+
+        content = "#!lib_include not_here.yaml"
+        file_path = os.path.join(self.test_dir, 'test.yaml')
+        with open(file_path, 'w', encoding='utf-8') as f:
+            f.write(content)
+
+        with self.assertRaises(FileNotFoundError):
+            self.yaml_utils.load_yaml_with_includes('test.yaml')
+
 
     def test_file_not_found(self):
         content = "#!local_include non_existent.yaml"
@@ -290,7 +309,7 @@ class TestYAMLUtils(unittest.TestCase):
             f.write(content)
 
         with self.assertRaises(FileNotFoundError):
-            YAMLUtils.load_yaml_with_includes(file_path, self.lib_dir)
+            self.yaml_utils.load_yaml_with_includes('test.yaml')
 
     def test_load_yaml_with_lib_include_2(self):
         lib_content = "lib_key: lib_value"
@@ -304,7 +323,7 @@ class TestYAMLUtils(unittest.TestCase):
         with open(main_file, 'w', encoding='utf-8') as f:
             f.write(main_content)
 
-        result = YAMLUtils.load_yaml_with_includes(main_file, self.lib_dir)
+        result = self.yaml_utils.load_yaml_with_includes('main.yaml')
         self.assertEqual(result, {'key': 'value', 'lib_key': 'lib_value'})
 
     def test_load_yaml_with_lib_include_3(self):
@@ -320,7 +339,7 @@ class TestYAMLUtils(unittest.TestCase):
         with open(main_file, 'w', encoding='utf-8') as f:
             f.write(main_content)
 
-        result = YAMLUtils.load_yaml_with_includes(main_file, self.lib_dir)
+        result = self.yaml_utils.load_yaml_with_includes('main.yaml')
         self.assertEqual(result, {'key': 'value', 'lib_key': 'lib_value'})
 
 if __name__ == '__main__':

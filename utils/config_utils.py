@@ -50,7 +50,7 @@ class ConfigParamRetriever:
 
     def get_local_configs(self):
         """ Returns the list of local configs available """
-        # todo: use storage
+
         # Get path and check valid
         current_directory = os.getcwd()
         configs_path = os.path.join(current_directory, ConfigStore.local_config_dir)
@@ -70,16 +70,29 @@ class ConfigParamRetriever:
     def __parse_section_helper(self, value):
         """ Parse the section value as JSON or TOML. """
 
-        stripped_value = value.lstrip()
-        if stripped_value.startswith("{"):
-            # Parse as JSON
-            ret_val = json.loads(value)
-        else:
-            # Parse as TOML
-            ret_val = toml.loads(value)
+        try:
+            stripped_value = value.lstrip()
+            if stripped_value.startswith("{"):
+                # Parse as JSON
+                ret_val = json.loads(value)
+            else:
+                # Parse as TOML
+                ret_val = toml.loads(value)
 
-        # Done
-        return ret_val
+            # Done
+            return ret_val
+
+        except json.JSONDecodeError as json_err:
+            error_message = f"Invalid JSON in config '{self.config_path}': {str(json_err)}"
+            raise ValueError(error_message) from json_err
+
+        except toml.TomlDecodeError as toml_err:
+            error_message = f"Invalid TOML in config '{self.config_path}': {str(toml_err)}"
+            raise ValueError(error_message) from toml_err
+
+        except Exception as e:
+            error_message = f"Unexpected error parsing config '{self.config_path}': {str(e)}"
+            raise ValueError(error_message) from e
 
     @lru_cache(maxsize=10)
     def _fetch_section_from_local(self, key):
@@ -201,7 +214,7 @@ class ConfigParamRetriever:
                 return default_value
 
             # Raise error as not handled
-            raise ValueError(f"Unable to retrieve parameter from AWS SSM: {exc}") from exc
+            raise ValueError(f"Unable to retrieve '{nested_key}' from AWS SSM: {exc}") from exc
         except (KeyError, TypeError) as exc:
 
             # Handle safely if we have default
@@ -269,5 +282,6 @@ class ConfigStore(ConfigParamRetriever):
         friendly_name = ConfigStore.generate_friendly_name(git_commit_sha)
 
         _aws_configured, aws_status = AWSUtils.is_aws_configured()
-        status_string =  f'BUILD: {friendly_name}-{git_run_number}, CONFIG: {config_path}, AWS: {aws_status}'
+        status_string =  f"BUILD: {friendly_name}-{git_run_number}"
+        status_string = status_string + f", CONFIG: {config_path}, AWS: {aws_status}"
         return status_string

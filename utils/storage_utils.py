@@ -36,6 +36,10 @@ class StorageBackend(ABC):
         """ List the files in the folder """
 
     @abstractmethod
+    def list_folders(self, folder: str) -> list:
+        """ List the folders in the folder """
+
+    @abstractmethod
     def file_exists(self, path: str) -> bool:
         """ Check if a file exists """
 
@@ -53,9 +57,9 @@ class StorageBackend(ABC):
             parts = storage_path.split('|')
             if not parts[0]:
                 raise ValueError("Invalid S3 storage path: bucket name is required.")
-            bucket_name = parts[0]
+            s3_path = parts[0]
             region_name = parts[1] if len(parts) > 1 else None
-            return S3StorageBackend(bucket_name, region_name)
+            return S3StorageBackend(s3_path, region_name)
 
         # Check for local storage
         if storage_path.startswith("local::"):
@@ -63,6 +67,24 @@ class StorageBackend(ABC):
 
         # Default to local storage
         return LocalStorageBackend(storage_path)
+
+    @staticmethod
+    def dirname(storage_path: str):
+        """ Remove the file name part and return the dir """
+        storage_path = storage_path.replace('\\', '/')
+        path_parts = storage_path.split('/')
+        directory_parts = path_parts[:-1]
+        directory_path = '/'.join(directory_parts)
+        return directory_path
+
+    @staticmethod
+    def basename(storage_path: str):
+        """ Extract and return the file name from the given path """
+        storage_path = storage_path.replace('\\', '/')
+        path_parts = storage_path.split('/')
+        file_name = path_parts[-1] if path_parts else ''
+        return file_name
+
 
 class LocalStorageBackend(StorageBackend):
     """ Local storage on the file systems """
@@ -73,10 +95,10 @@ class LocalStorageBackend(StorageBackend):
 
     def _prep_path(self, path):
         """ Prep and sanitize the path """
+        if ".." in path:
+            raise ValueError(f"Invalid path: '{path}' - cannot contain '..' ")
         full_path = os.path.join(self.root_folder, path)
         full_path = os.path.normpath(full_path)
-        if ".." in full_path.split(os.path.sep):
-            raise ValueError(f"Invalid path: '{full_path}'")
         return full_path
 
     def read_binary(self, path: str) -> bytes:
@@ -118,14 +140,29 @@ class LocalStorageBackend(StorageBackend):
         relative_path = os.path.relpath(full_path, self.root_folder)
         return relative_path.replace(os.path.sep, "/")
 
+    def _list(self, folder: str, files=True) -> list:
+        """ List all files or folders in a folder and return their relative paths """
+        full_folder_path = self._prep_path(folder)
+        result = []
+
+        for item_path in os.listdir(full_folder_path):
+            full_path = os.path.join(full_folder_path, item_path)
+            if files and os.path.isfile(full_path):
+                result.append(item_path)
+            elif not files and os.path.isdir(full_path):
+                relative_path = self._to_relative_path(full_path)
+                sub_folder = relative_path.lstrip(f'{folder}/')
+                result.append(sub_folder)
+
+        return result
+
     def list_files(self, folder: str) -> list:
         """ List all files in a folder and return their relative paths """
-        full_folder_path = self._prep_path(folder)
-        return [
-            self._to_relative_path(os.path.join(full_folder_path, f))
-            for f in os.listdir(full_folder_path)
-            if os.path.isfile(os.path.join(full_folder_path, f))
-        ]
+        return self._list(folder, files=True)
+
+    def list_folders(self, folder: str) -> list:
+        """ List all folders in a folder and return their relative paths """
+        return self._list(folder, files=False)
 
     def file_exists(self, path: str) -> bool:
         """ Check if a file exists """
@@ -143,10 +180,13 @@ class LocalStorageBackend(StorageBackend):
 class S3StorageBackend(StorageBackend):
     """ S3-based storage backend """
 
-    def __init__(self, bucket_name, region_name=None):
+    def __init__(self, path, region_name=None):
         super().__init__()
-        self.bucket_name = bucket_name
-        self.s3_client = boto3.client( 's3', region_name=region_name)
+        parts = path.split('/')
+        self.bucket_name = parts[0]
+        self.folder = '/'.join(parts[1:]) if len(parts) > 1 else ''
+        self.s3_client = boto3.client('s3', region_name=region_name)
+        self._check_bucket_exists()
 
     def _check_bucket_exists(self):
         """ Check if the S3 bucket exists """
@@ -158,7 +198,10 @@ class S3StorageBackend(StorageBackend):
 
     def _normalize_path(self, path: str) -> str:
         """ Ensure path consistency for S3 keys """
-        return path.lstrip("/")
+        normalized = path.lstrip("/")
+        if self.folder:
+            normalized = f"{self.folder.rstrip('/')}/{normalized}"
+        return normalized
 
     def read_binary(self, path: str) -> bytes:
         """ Read a binary file from S3 """
@@ -209,24 +252,44 @@ class S3StorageBackend(StorageBackend):
             err_msg = f"Could not delete file at {key}: {exc}"
             raise FileNotFoundError(err_msg) from exc
 
-    def list_files(self, folder: str) -> list:
+    def _list(self, folder: str, files=True) -> list:
         """ List files in a folder or the root if an empty string is passed """
-        prefix = self._normalize_path(folder).rstrip("/") + "/" if folder else ""
+        prefix = self._normalize_path(folder).rstrip("/") + "/" if folder else self.folder
         try:
             response = self.s3_client.list_objects_v2(Bucket=self.bucket_name, Prefix=prefix)
             if 'Contents' not in response:
                 return []
-            # Filter to only return files directly in the specified folder or root
-            files = [
-                obj['Key'] for obj in response['Contents']
-                if not obj['Key'].rstrip("/").endswith("/") and (
-                    folder == "" or "/" not in obj['Key'][len(prefix):]
-                )
-            ]
-            return files
+
+            result = []
+            for obj in response['Contents']:
+                key = obj['Key']
+                relative_path = key[len(prefix):].lstrip('/')
+                path_parts = relative_path.split('/')
+
+                # Add it if is a file in this directory
+                if files and (len(path_parts) == 1) :
+                    file_name = path_parts[0]
+                    result.append(file_name)
+
+                # Add if its a file in new subfolder
+                elif not files and (len(path_parts) > 1) :
+                    folder_name = path_parts[0]
+                    if folder_name not in result:
+                        result.append(folder_name)
+
+            # Done
+            return result
         except ClientError as exc:
             err_msg = f"Could not list files in folder {folder}: {exc}"
             raise IOError(err_msg) from exc
+
+    def list_files(self, folder: str) -> list:
+        """ List all files in a folder and return their relative paths """
+        return self._list(folder, files=True)
+
+    def list_folders(self, folder: str) -> list:
+        """ List all folders in a folder and return their relative paths """
+        return self._list(folder, files=False)
 
     def file_exists(self, path: str) -> bool:
         """ Check if a file exists in S3 """

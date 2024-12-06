@@ -91,6 +91,7 @@
     - [ ] EAA style security group config
 
 # User Authentication
+- [ ] Custom
  - Azure AD
  - Cognito
 
@@ -116,6 +117,7 @@
  [ ] DB query step to get data
  [ ] Add getters for the storage classes (s3, github)
  [ ] rework getters, split out file type text extraction, listing (browsing) / pickers and getters.
+ [ ] map authentication to getter access key
 
  # Connectors.Exporters
  [ ] confluence

@@ -145,7 +145,7 @@ class TestConfigStoreAWSSSM(unittest.TestCase):
         store = ConfigStore(config_path='ssm::/test/config')
 
         # Fetch the parameter and expect a parsing error
-        with self.assertRaises(toml.TomlDecodeError):
+        with self.assertRaises(ValueError):
             _settings = store['settings']
 
     @patch('utils.config_utils.boto3.client')
@@ -162,9 +162,11 @@ class TestConfigStoreAWSSSM(unittest.TestCase):
         # Create the ConfigStore instance
         store = ConfigStore(config_path='ssm::/test/config')
 
-        # Fetch the parameter and expect a JSONDecodeError
-        with self.assertRaises(json.JSONDecodeError):
+        # Fetch the parameter and expect a ValueError
+        with self.assertRaises(ValueError):
             _db = store['db']
+
+
 
 class TestConfigStoreNestedGet(unittest.TestCase):
 

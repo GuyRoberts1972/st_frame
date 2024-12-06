@@ -54,9 +54,23 @@ class TestLocalStorageBackend(unittest.TestCase):
             paths,
         )
 
+    def test_list_folders(self):
+        paths = ["file1.txt", "folder1/file2.txt", "folder1/subfolder/file3.txt"]
+        for path in paths:
+            self.storage.write_text(path, "Test content")
+        folders = self.storage.list_folders("")
+        expected_folders = ['folder1']
+        self.assertEqual(sorted(expected_folders),sorted(folders))
+
+        folders = self.storage.list_folders("folder1")
+        expected_folders = ['subfolder']
+        self.assertEqual(sorted(expected_folders),sorted(folders))
+
     def test_invalid_path(self):
+        with self.assertRaises(ValueError):
+            self.storage.read_text("../no_traversal.txt")
         with self.assertRaises(FileNotFoundError):
-            self.storage.read_text("../invalid.txt")
+            self.storage.read_text("badpath/invalid.txt")
 
     def test_list_files_relative_paths(self):
         # Create test files in root and a subfolder
@@ -76,7 +90,7 @@ class TestLocalStorageBackend(unittest.TestCase):
 
         # List files in subfolder (non-recursive)
         files_in_subfolder = self.storage.list_files(subfolder)
-        self.assertIn(subfolder_file.replace(os.path.sep, "/"), files_in_subfolder)
+        self.assertIn("file2.txt", files_in_subfolder)
 
     def test_file_exists(self):
         # Write a test file
@@ -106,30 +120,26 @@ class TestLocalStorageBackend(unittest.TestCase):
         self.assertTrue(self.storage.file_exists(new_folder_path))
         self.assertEqual(self.storage.read_text(new_folder_path), content)
 
-
 class TestS3StorageBackend(unittest.TestCase):
 
-    def __init__(self, methodName = "runTest"):
+    def __init__(self, methodName="runTest"):
         super().__init__(methodName)
-
         self.bucket_name = "test-bucket"
+        self.folder = "test-folder"
         self.s3_client = None
         self.storage = None
 
     def set_up(self):
         """ Common setup logic """
-
         self.s3_client = boto3.client("s3", region_name="us-east-1")
         self.s3_client.create_bucket(Bucket=self.bucket_name)
-        self.storage = S3StorageBackend(bucket_name=self.bucket_name)
+        self.storage = S3StorageBackend(f"{self.bucket_name}/{self.folder}")
 
     @mock_aws
     def test_001_write_and_read_text(self):
         """ Test writing and reading a text file """
-
         self.set_up()
-
-        file_path = "test-folder/test-file.txt"
+        file_path = "test-file.txt"
         content = "Hello, S3!"
 
         self.storage.write_text(file_path, content)
@@ -140,20 +150,13 @@ class TestS3StorageBackend(unittest.TestCase):
     @mock_aws
     def test_s3_operations(self):
         self.set_up()
-
-        # Create a mock S3 client
         s3_client = boto3.client('s3', region_name='us-east-1')
 
-        # Create a mock S3 bucket
-        bucket_name = 'my-test-bucket'
-        s3_client.create_bucket(Bucket=bucket_name)
-
         # Upload a file to the mock bucket
-        s3_client.put_object(Bucket=bucket_name, Key='test-file.txt', Body='Hello, World!')
+        s3_client.put_object(Bucket=self.bucket_name, Key=f'{self.folder}/test-file.txt', Body='Hello, World!')
 
-        # Retrieve the file from the mock bucket
-        response = s3_client.get_object(Bucket=bucket_name, Key='test-file.txt')
-        content = response['Body'].read().decode('utf-8')
+        # Retrieve the file using our storage backend
+        content = self.storage.read_text('test-file.txt')
 
         # Assert the content is correct
         self.assertEqual(content, 'Hello, World!')
@@ -162,7 +165,7 @@ class TestS3StorageBackend(unittest.TestCase):
     def test_001_write_and_read_binary(self):
         """ Test writing and reading a binary file """
         self.set_up()
-        file_path = "test-folder/test-binary.bin"
+        file_path = "test-binary.bin"
         content = b"\x00\x01\x02\x03"
 
         self.storage.write_binary(file_path, content)
@@ -174,7 +177,7 @@ class TestS3StorageBackend(unittest.TestCase):
     def test_file_exists(self):
         """ Test checking if a file exists """
         self.set_up()
-        file_path = "test-folder/test-file.txt"
+        file_path = "test-file.txt"
         self.assertFalse(self.storage.file_exists(file_path))
 
         self.storage.write_text(file_path, "Hello, S3!")
@@ -186,25 +189,57 @@ class TestS3StorageBackend(unittest.TestCase):
         self.set_up()
 
         file_paths = [
-            "test-folder/file1.txt",
-            "test-folder/file2.txt",
-            "test-folder/subfolder/file3.txt"
+            "file1.txt",
+            "file2.txt",
+            "subfolder/file3.txt"
         ]
 
         for file_path in file_paths:
             self.storage.write_text(file_path, "Sample content")
 
-        listed_files = self.storage.list_files("test-folder")
+        listed_files = self.storage.list_files("")
         expected_files = [
-            "test-folder/file1.txt",
-            "test-folder/file2.txt"
+            "file1.txt",
+            "file2.txt"
         ]
 
         self.assertEqual(sorted(listed_files), sorted(expected_files))
 
     @mock_aws
+    def test_list_folders(self):
+        """ Test listing folders in a folder """
+        self.set_up()
+
+        file_paths = [
+            "file1.txt",
+            "file2.txt",
+            "subfolder1/file3.txt",
+            "subfolder2/file4.txt",
+            "subfolder2/file5.txt",
+            "subfolder2/another_subfolder/file11.txt"
+        ]
+
+        for file_path in file_paths:
+            self.storage.write_text(file_path, "Sample content")
+
+        listed_folders = self.storage.list_folders("")
+        expected_folders = [
+            "subfolder1",
+            "subfolder2"
+        ]
+
+        self.assertEqual(sorted(listed_folders), sorted(expected_folders))
+
+        listed_folders = self.storage.list_folders("subfolder2")
+        expected_folders = [
+            "another_subfolder",
+        ]
+
+        self.assertEqual(sorted(listed_folders), sorted(expected_folders))
+
+    @mock_aws
     def test_list_files_2(self):
-        """ Test listing files in a folder """
+        """ Test listing files in the root folder """
         self.set_up()
 
         file_paths = [
@@ -221,12 +256,11 @@ class TestS3StorageBackend(unittest.TestCase):
 
         self.assertEqual(sorted(listed_files), sorted(expected_files))
 
-
     @mock_aws
     def test_delete(self):
         """ Test deleting a file """
         self.set_up()
-        file_path = "test-folder/test-file.txt"
+        file_path = "test-file.txt"
         self.storage.write_text(file_path, "Hello, S3!")
 
         self.assertTrue(self.storage.file_exists(file_path))
@@ -238,8 +272,8 @@ class TestS3StorageBackend(unittest.TestCase):
     def test_rename(self):
         """ Test renaming a file """
         self.set_up()
-        old_path = "test-folder/old-file.txt"
-        new_path = "test-folder/new-file.txt"
+        old_path = "old-file.txt"
+        new_path = "new-file.txt"
         content = "Hello, S3!"
 
         self.storage.write_text(old_path, content)
@@ -253,8 +287,8 @@ class TestS3StorageBackend(unittest.TestCase):
     def test_copy(self):
         """ Test copying a file """
         self.set_up()
-        source_path = "test-folder/source-file.txt"
-        destination_path = "test-folder/destination-file.txt"
+        source_path = "source-file.txt"
+        destination_path = "destination-file.txt"
         content = "Hello, S3!"
 
         self.storage.write_text(source_path, content)
@@ -263,6 +297,170 @@ class TestS3StorageBackend(unittest.TestCase):
         self.assertTrue(self.storage.file_exists(source_path))
         self.assertTrue(self.storage.file_exists(destination_path))
         self.assertEqual(self.storage.read_text(destination_path), content)
+
+class TestS3StorageBackendWithAndWithOutfolders(unittest.TestCase):
+
+    def __init__(self, methodName="runTest"):
+        super().__init__(methodName)
+        self.bucket_name = "test-bucket"
+        self.s3_client = None
+        self.storage = None
+
+    def set_up(self, folder=None):
+        """ Common setup logic """
+        self.s3_client = boto3.client("s3", region_name="us-east-1")
+        self.s3_client.create_bucket(Bucket=self.bucket_name)
+        if folder:
+            self.storage = S3StorageBackend(f"{self.bucket_name}/{folder}")
+        else:
+            self.storage = S3StorageBackend(self.bucket_name)
+
+    @mock_aws
+    def test_bucket_without_folder(self):
+        """ Test operations on a bucket without a subfolder """
+        self.set_up()
+
+        # Write files directly to the bucket root
+        self.storage.write_text("file1.txt", "Content 1")
+        self.storage.write_text("file2.txt", "Content 2")
+        self.storage.write_text("subfolder/file3.txt", "Content 3")
+
+        # List files in the bucket root
+        listed_files = self.storage.list_files("")
+        expected_files = ["file1.txt", "file2.txt"]
+        self.assertEqual(sorted(listed_files), sorted(expected_files))
+
+        # Read a file from the bucket root
+        content = self.storage.read_text("file1.txt")
+        self.assertEqual(content, "Content 1")
+
+        # Check if a file exists in the bucket root
+        self.assertTrue(self.storage.file_exists("file2.txt"))
+        self.assertFalse(self.storage.file_exists("nonexistent.txt"))
+
+        # Delete a file from the bucket root
+        self.storage.delete("file2.txt")
+        self.assertFalse(self.storage.file_exists("file2.txt"))
+
+        # Rename a file in the bucket root
+        self.storage.rename("file1.txt", "renamed.txt")
+        self.assertFalse(self.storage.file_exists("file1.txt"))
+        self.assertTrue(self.storage.file_exists("renamed.txt"))
+
+        # Copy a file in the bucket root
+        self.storage.copy("renamed.txt", "copied.txt")
+        self.assertTrue(self.storage.file_exists("copied.txt"))
+        self.assertEqual(self.storage.read_text("copied.txt"), "Content 1")
+
+    @mock_aws
+    def test_bucket_with_and_without_folder(self):
+        """ Test operations on a bucket with and without a subfolder """
+        # Set up storage without a folder
+        self.set_up()
+        root_storage = self.storage
+
+        # Write files to the bucket root
+        root_storage.write_text("root_file.txt", "Root content")
+        root_storage.write_text("folder/file_in_folder.txt", "Folder content")
+
+        # Set up storage with a folder
+        self.set_up("folder")
+        folder_storage = self.storage
+
+        # List files in the bucket root
+        root_files = root_storage.list_files("")
+        self.assertEqual(sorted(root_files), ["root_file.txt"])
+
+        # List files in the folder
+        folder_files = folder_storage.list_files("")
+        self.assertEqual(sorted(folder_files), ["file_in_folder.txt"])
+
+        # Read files from both storages
+        self.assertEqual(root_storage.read_text("root_file.txt"), "Root content")
+        self.assertEqual(folder_storage.read_text("file_in_folder.txt"), "Folder content")
+
+        # Check file existence
+        self.assertTrue(root_storage.file_exists("root_file.txt"))
+        self.assertFalse(root_storage.file_exists("file_in_folder.txt"))
+        self.assertTrue(folder_storage.file_exists("file_in_folder.txt"))
+        self.assertFalse(folder_storage.file_exists("root_file.txt"))
+
+class TestPathUtilities(unittest.TestCase):
+
+    def test_dirname(self):
+        # Test with a normal file path
+        self.assertEqual(
+            S3StorageBackend.dirname("path/to/file.txt"),
+            "path/to"
+        )
+
+        # Test with a path ending in a directory
+        self.assertEqual(
+            S3StorageBackend.dirname("path/to/directory/"),
+            "path/to/directory"
+        )
+
+        # Test with a single file
+        self.assertEqual(
+            S3StorageBackend.dirname("file.txt"),
+            ""
+        )
+
+        # Test with an empty string
+        self.assertEqual(
+            S3StorageBackend.dirname(""),
+            ""
+        )
+
+        # Test with root path
+        self.assertEqual(
+            S3StorageBackend.dirname("/file.txt"),
+            ""
+        )
+
+        # Test with nested directories and file
+        self.assertEqual(
+            S3StorageBackend.dirname("/path/to/file.txt"),
+            "/path/to"
+        )
+
+    def test_basename(self):
+        # Test with a normal file path
+        self.assertEqual(
+            S3StorageBackend.basename("path/to/file.txt"),
+            "file.txt"
+        )
+
+        # Test with a path ending in a directory
+        self.assertEqual(
+            S3StorageBackend.basename("path/to/directory/"),
+            ""
+        )
+
+        # Test with a single file
+        self.assertEqual(
+            S3StorageBackend.basename("file.txt"),
+            "file.txt"
+        )
+
+        # Test with an empty string
+        self.assertEqual(
+            S3StorageBackend.basename(""),
+            ""
+        )
+
+        # Test with root path
+        self.assertEqual(
+            S3StorageBackend.basename("/file.txt"),
+            "file.txt"
+        )
+
+        # Test with nested directories and file
+        self.assertEqual(
+            S3StorageBackend.basename("/path/to/file.txt"),
+            "file.txt"
+        )
+
 
 
 if __name__ == '__main__':
