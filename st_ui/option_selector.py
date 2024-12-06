@@ -1,6 +1,6 @@
 """ Streamlit functionality to select an option and sub option """
-import streamlit as st
 from typing import Dict, Callable, Any
+import streamlit as st
 
 class OptionSelector:
     """
@@ -103,7 +103,10 @@ class OptionSelector:
 
         col1, col2 = st.columns(2)
         with col1:
-            if st.button(self.STRINGS["ACTION_CONFIRM_BUTTON"], disabled=not selected_sub_option['enabled']):
+            if st.button(
+                self.STRINGS["ACTION_CONFIRM_BUTTON"],
+                disabled=not selected_sub_option['enabled']):
+
                 self.on_select(st.session_state.op_sel_selected_option_key, selected_key, selected_sub_option)
                 st.success(self.STRINGS["SUCCESS_MESSAGE"].format(
                     sub_option=selected_sub_option['title'],
@@ -119,6 +122,7 @@ class OptionSelector:
 
 def example_usage():
     """ Usage illustration """
+
     options = {
         "fruits": {
             "icon": "\U0001F34E",  # Red Apple
@@ -143,6 +147,7 @@ def example_usage():
     }
 
     def get_sub_options(option_key):
+        #pylint: disable=line-too-long
         sub_options = {
             "fruits": {
                 "apple": {"title": "Apple", "description": "Red and crunchy", "enabled": True},
@@ -152,7 +157,7 @@ def example_usage():
             },
             "vegetables": {
                 "carrot": {"title": "Carrot", "description": "Orange and crunchy", "enabled": True},
-                "broccoli": {"title": "Broccoli", "description": "Green and nutritious", "enabled": True},
+                "broccoli": {"title": "Broccoli", "description": "Green, nutritious", "enabled": True},
                 "spinach": {"title": "Spinach", "description": "Leafy and iron-rich", "enabled": True},
                 "artichoke": {"title": "Artichoke", "description": "Unique and flavorful", "enabled": False}
             },

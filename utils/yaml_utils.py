@@ -1,9 +1,9 @@
 "YAML helpers for loading configuration"
-import os
 from typing import Dict, Any
 import copy
 from functools import reduce
 import yaml
+from utils.storage_utils import StorageBackend
 
 class YAMLKeyResolver:
     """ Handles special keys in loaded YAML that allow efficient use of templates """
@@ -170,13 +170,21 @@ class YAMLKeyResolver:
 
 class YAMLUtils:
     """ Loading and manipultaing YAML files, also custom features like includes """
-    @staticmethod
-    def load_yaml_with_includes(file_path: str, include_lib_path: str) -> Dict[Any, Any]:
+
+    def __init__(
+            self,
+            use_case_templates_store : StorageBackend,
+            templates_include_lib_store : StorageBackend):
+
+        # Storage
+        self.use_case_templates_store = use_case_templates_store
+        self.templates_include_lib_store = templates_include_lib_store
+
+    def load_yaml_with_includes(self, file_path: str) -> Dict[Any, Any]:
         """ Load the file and process include statements to include local or lib include files"""
 
         # Open the file
-        with open(file_path, 'r', encoding='utf-8') as file:
-            content = file.read()
+        content = self.use_case_templates_store.read_text(file_path)
 
         # Split into lins
         lines = content.split('\n')
@@ -185,10 +193,11 @@ class YAMLUtils:
         # Loop, process includes statements
         for line in lines:
             if line.strip().startswith('#!local_include'):
-                include_lines = YAMLUtils._process_local_include(line, os.path.dirname(file_path))
+                template_path = StorageBackend.dirname(file_path)
+                include_lines = self._process_include(line, self.use_case_templates_store, template_path)
                 processed_lines.extend(include_lines)
             elif line.strip().startswith('#!lib_include'):
-                include_lines = YAMLUtils._process_lib_include(line, include_lib_path)
+                include_lines = self._process_include(line, self.templates_include_lib_store)
                 processed_lines.extend(include_lines)
             else:
                 processed_lines.append(line)
@@ -197,60 +206,28 @@ class YAMLUtils:
         processed_content = '\n'.join(processed_lines)
         return yaml.safe_load(processed_content)
 
-    @staticmethod
-    def load_yaml(file_path: str, include_lib_path: str) -> Dict[Any, Any]:
+    def load_yaml(self, file_path: str) -> Dict[Any, Any]:
         """ Load the yaml with includes and reference resolution """
 
-        data = YAMLUtils.load_yaml_with_includes(file_path, include_lib_path)
+        data = self.load_yaml_with_includes(file_path)
         data =  YAMLKeyResolver.resolve_refs(data)
         return data
 
-    @staticmethod
-    def _process_local_include(line: str, current_dir: str) -> list:
+    def _process_include(self, line: str, store : StorageBackend, template_path='') -> list:
         parts = line.split()
         if len(parts) != 2:
             raise ValueError(f"Invalid local include directive: {line}")
 
-        include_file = parts[1]
-        if any(sep in include_file for sep in (os.path.sep, os.path.altsep) if sep):
-            raise ValueError(f"Local include must not contain path separators: {include_file}")
-
-        include_path = os.path.join(current_dir, include_file)
-        if not os.path.exists(include_path):
-            raise FileNotFoundError(f"Local include file not found: {include_path}")
-
-        return YAMLUtils._load_file_content(include_path)
-
-    @staticmethod
-    def _process_lib_include(line: str, include_lib_path: str) -> list:
-        include_lib_path = os.path.normpath(include_lib_path)
-        parts = line.split()
-        if len(parts) != 2:
-            raise ValueError(f"Invalid library include directive: {line}")
-
+        # Get path to the include file
         include_path = parts[1]
-        # Replace forward slashes with os-specific separator
-        include_path = include_path.replace('/', os.path.sep)
-        normalized_path = os.path.normpath(include_path)
+        if template_path !='':
+            include_path = f"{template_path}/{include_path}"
 
-        # Check no parent dir navigatio
-        if '..' in normalized_path.split(os.path.sep):
-            err_msg = f"Path must not navigate outside the library path: '{include_path}'"
-            raise ValueError(err_msg)
+        # Load the lines
+        content = store.read_text(include_path)
+        lines = content.split('\n')
+        return lines
 
-        # Check path is in the include lib path
-        full_path = os.path.normpath(os.path.join(include_lib_path, include_path))
-        common_path = os.path.commonpath([full_path, include_lib_path])
-        if not common_path == include_lib_path:
-            err_msg = f"Path must not be outside the library path: '{include_path}'"
-            raise ValueError(err_msg)
 
-        if not os.path.exists(full_path):
-            raise FileNotFoundError(f"Library include file not found: '{full_path}'")
 
-        return YAMLUtils._load_file_content(full_path)
 
-    @staticmethod
-    def _load_file_content(file_path: str) -> list:
-        with open(file_path, 'r', encoding='utf-8') as file:
-            return file.read().split('\n')

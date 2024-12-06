@@ -50,7 +50,7 @@ class ConfigParamRetriever:
 
     def get_local_configs(self):
         """ Returns the list of local configs available """
-        # todo: use storage
+
         # Get path and check valid
         current_directory = os.getcwd()
         configs_path = os.path.join(current_directory, ConfigStore.local_config_dir)
@@ -214,7 +214,7 @@ class ConfigParamRetriever:
                 return default_value
 
             # Raise error as not handled
-            raise ValueError(f"Unable to retrieve parameter from AWS SSM: {exc}") from exc
+            raise ValueError(f"Unable to retrieve '{nested_key}' from AWS SSM: {exc}") from exc
         except (KeyError, TypeError) as exc:
 
             # Handle safely if we have default
@@ -282,5 +282,6 @@ class ConfigStore(ConfigParamRetriever):
         friendly_name = ConfigStore.generate_friendly_name(git_commit_sha)
 
         _aws_configured, aws_status = AWSUtils.is_aws_configured()
-        status_string =  f'BUILD: {friendly_name}-{git_run_number}, CONFIG: {config_path}, AWS: {aws_status}'
+        status_string =  f"BUILD: {friendly_name}-{git_run_number}"
+        status_string = status_string + f", CONFIG: {config_path}, AWS: {aws_status}"
         return status_string
