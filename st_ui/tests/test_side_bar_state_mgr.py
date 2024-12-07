@@ -209,5 +209,11 @@ class TestSideBarStateMgr(unittest.TestCase):
         # Call the example_usage function
         example_usage()
 
+        # Click all the actions
+        for selected_action in ['New Session', 'Rename', 'Duplicate', 'Delete']:
+            st.session_state['sbsm_selected_action'] = selected_action
+            example_usage()
+
+
 if __name__ == '__main__':
     unittest.main()
