@@ -56,10 +56,10 @@ class TemplateManager:
     def get_group_templates(self, subfolder):
         """Get the templates in a specific group."""
         items = {}
-        file_paths = self.use_case_templates_store.list_files(subfolder)
-        for file_path in file_paths:
-            file_name = StorageBackend.basename(file_path)
+        file_names = self.use_case_templates_store.list_files(subfolder)
+        for file_name in file_names:
             if file_name.endswith('.yaml') and not file_name.startswith('_'):
+                file_path = f"{subfolder}/{file_name}"
                 item_data = self._load_yaml_file(file_path)
                 if item_data:
                     # Use the filename (without extension) as the key

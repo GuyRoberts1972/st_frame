@@ -120,6 +120,7 @@ class LocalStorageBackend(StorageBackend):
         with open(full_path, "r", encoding=encoding) as file:
             return file.read()
 
+
     def write_text(self, path: str, data: str, encoding: str = "utf-8") -> None:
         """ Write to file in text mode """
         full_path = self._prep_path(path)

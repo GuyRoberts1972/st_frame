@@ -91,7 +91,7 @@
     - [ ] EAA style security group config
 
 # User Authentication
-- [ ] Custom
+- [x] Custom
  - Azure AD
  - Cognito
 
