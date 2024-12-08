@@ -19,10 +19,12 @@ WORKDIR /app
 ENV PYTHONPATH=.
 
 # Accept arguments and pass them as environment variables
-ARG GIT_RUN_NUMBER='no-run-number'
-ARG GIT_COMMIT_SHA='no-commit-sha'
-ENV GIT_RUN_NUMBER=$GIT_RUN_NUMBER
-ENV GIT_COMMIT_SHA=$GIT_COMMIT_SHA
+ARG GITHUB_RUN_NUMBER='no-run-number'
+ARG GITHUB_REF='no-commit-ref'
+ARG GITHUB_SHA='no-commit-sha'
+ENV GITHUB_RUN_NUMBER=$GITHUB_RUN_NUMBER
+ENV GITHUB_REF=$GITHUB_REF
+ENV GITHUB_SHA=$GITHUB_SHA
 
 # Copy application code
 COPY utils ./utils

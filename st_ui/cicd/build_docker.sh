@@ -27,8 +27,9 @@ fi
 TARGET="st_ui"
 DEFAULT_IMAGE_NAME=$TARGET
 DEFAULT_IMAGE_TAG="local"
-DEFAULT_GIT_RUN_NUMBER="manual"
-DEFAULT_COMMIT_REF="manual"
+DEFAULT_GITHUB_RUN_NUMBER="local"
+DEFAULT_GITHUB_REF="local"
+DEFAULT_GITHUB_SHA="local"
 
 # Image name construction
 if is_github_actions; then
@@ -58,19 +59,22 @@ fi
 
 # Set the Git run number and commit ref
 if is_github_actions; then
-  GIT_RUN_NUMBER="${GITHUB_RUN_NUMBER:-manual}"
-  COMMIT_REF="${GITHUB_SHA:-manual}"
+  GITHUB_RUN_NUMBER="${GITHUB_RUN_NUMBER:-missing_github_run_number}"
+  GITHUB_REF="${GITHUB_REF:-missing_github_ref}"
+  GITHUB_SHA="${GITHUB_SHA:-missing_github_sha}"
 else
-  GIT_RUN_NUMBER=$DEFAULT_GIT_RUN_NUMBER
-  COMMIT_REF=$DEFAULT_COMMIT_REF
+  GITHUB_RUN_NUMBER=$DEFAULT_GITHUB_RUN_NUMBER
+  GITHUB_REF=$DEFAULT_GITHUB_REF
+  GITHUB_SHA=$DEFAULT_GITHUB_SHA
 fi
 
 # Log the image name, tag, and additional info for debugging
 echo "Building Docker image:"
 echo "  IMAGE_NAME: $IMAGE_NAME"
 echo "  IMAGE_TAG: $IMAGE_TAG"
-echo "  GIT_RUN_NUMBER: $GIT_RUN_NUMBER"
-echo "  COMMIT_REF: $COMMIT_REF"
+echo "  GITHUB_RUN_NUMBER: $GITHUB_RUN_NUMBER"
+echo "  GITHUB_REF: $GITHUB_REF"
+echo "  GITHUB_SHA: $GITHUB_SHA"
 
 # Build the Docker image
 docker build -f ./st_ui/cicd/Dockerfile --cache-from "$IMAGE_NAME:latest" -t "$IMAGE_NAME:$IMAGE_TAG" .
@@ -80,26 +84,30 @@ if is_github_actions; then
   # Save to environment variables
   echo "IMAGE_NAME=$IMAGE_NAME" >> "$GITHUB_ENV"
   echo "IMAGE_TAG=$IMAGE_TAG" >> "$GITHUB_ENV"
-  echo "GIT_RUN_NUMBER=$GIT_RUN_NUMBER" >> "$GITHUB_ENV"
-  echo "COMMIT_REF=$COMMIT_REF" >> "$GITHUB_ENV"
+  echo "GITHUB_RUN_NUMBER=$GITHUB_RUN_NUMBER" >> "$GITHUB_ENV"
+  echo "GTIHUB_COMMIT_REF=$GTIHUB_COMMIT_REF" >> "$GITHUB_ENV"
+  echo "GITHUB_SHA=$GITHUB_SHA" >> "$GITHUB_ENV"
 
   # Save to job outputs
   echo "image_name=$IMAGE_NAME" >> "$GITHUB_OUTPUT"
   echo "image_tag=$IMAGE_TAG" >> "$GITHUB_OUTPUT"
-  echo "git_run_number=$GIT_RUN_NUMBER" >> "$GITHUB_OUTPUT"
-  echo "commit_ref=$COMMIT_REF" >> "$GITHUB_OUTPUT"
+  echo "github_run_number=$GITHUB_RUN_NUMBER" >> "$GITHUB_OUTPUT"
+  echo "github_ref=$GITHUB_REF" >> "$GITHUB_OUTPUT"
+  echo "github_sha=$GITHUB_SHA" >> "$GITHUB_OUTPUT"
 fi
 
 # Export variables locally for the current shell session
 if ! is_github_actions; then
   export IMAGE_NAME="$IMAGE_NAME"
   export IMAGE_TAG="$IMAGE_TAG"
-  export GIT_RUN_NUMBER="$GIT_RUN_NUMBER"
-  export COMMIT_REF="$COMMIT_REF"
+  export GITHUB_RUN_NUMBER="$GITHUB_RUN_NUMBER"
+  export GITHUB_REF="$GITHUB_REF"
+  export GITHUB_SHA="$GITHUB_SHA"
 
   echo "Environment variables set:"
   echo "  IMAGE_NAME=$IMAGE_NAME"
   echo "  IMAGE_TAG=$IMAGE_TAG"
-  echo "  GIT_RUN_NUMBER=$GIT_RUN_NUMBER"
-  echo "  COMMIT_REF=$COMMIT_REF"
+  echo "  GITHUB_RUN_NUMBER=$GITHUB_RUN_NUMBER"
+  echo "  GITHUB_REF=$GITHUB_REF"
+  echo "  GITHUB_SHA=$GITHUB_SHA"
 fi

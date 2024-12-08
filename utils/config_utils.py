@@ -18,14 +18,19 @@ class ConfigEnv:
         return os.getenv('CONFIG_PATH', 'local::default')
 
     @staticmethod
-    def get_git_run_number() -> str:
+    def get_github_run_number() -> str:
         """ The GitHub run number of the build """
-        return os.getenv('GIT_RUN_NUMBER', 'n/a')
+        return os.getenv('GITHUB_RUN_NUMBER', 'n/a')
 
     @staticmethod
-    def get_git_commit_sha() -> str:
+    def get_github_ref() -> str:
+        """ The commit rf for the build """
+        return os.getenv('GITHUB_REF', 'n/a')
+
+    @staticmethod
+    def get_github_sha() -> str:
         """ The commit sha that triggered the build """
-        return os.getenv('GIT_COMMIT_SHA', 'n/a')
+        return os.getenv('GITHUB_SHA', 'n/a')
 
 class ConfigParamRetriever:
     """ Implements secure parameter retreival from configured location
@@ -277,11 +282,15 @@ class ConfigStore(ConfigParamRetriever):
         """ Return a string summarising the config status """
 
         config_path = ConfigEnv.get_config_path()
-        git_commit_sha = ConfigEnv.get_git_commit_sha()
-        git_run_number = ConfigEnv.get_git_run_number()
+        git_commit_ref = ConfigEnv.get_github_ref()
+        git_commit_sha = ConfigEnv.get_github_sha()
+        github_run_number = ConfigEnv.get_github_run_number()
         friendly_name = ConfigStore.generate_friendly_name(git_commit_sha)
 
         _aws_configured, aws_status = AWSUtils.is_aws_configured()
-        status_string =  f"BUILD: {friendly_name}-{git_run_number}"
-        status_string = status_string + f", CONFIG: {config_path}, AWS: {aws_status}"
+        status_string =  f"SHA: {friendly_name}"
+        status_string = status_string + f", RUN: {github_run_number}"
+        status_string = status_string + f", REF: {git_commit_ref}"
+        status_string = status_string + f", CONFIG: {config_path}"
+        status_string = status_string + f", AWS: {aws_status}"
         return status_string
