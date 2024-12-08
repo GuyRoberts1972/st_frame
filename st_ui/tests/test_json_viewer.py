@@ -1,8 +1,8 @@
 # pylint: disable=missing-function-docstring, missing-module-docstring, missing-class-docstring, protected-access
 import unittest
-from unittest.mock import patch
+from unittest.mock import patch, MagicMock
 import json
-from st_ui.json_viewer import example_usage
+from st_ui.json_viewer import example_usage, JSONViewer
 
 class TestJSONViewer(unittest.TestCase):
     def test_example_usage(self):
@@ -78,6 +78,50 @@ class TestJSONViewer(unittest.TestCase):
         mock_button.assert_called_once_with("View JSON")
         mock_error.assert_called_once_with("Invalid JSON format. Please check your input.")
 
+    @patch("streamlit.session_state")
+    @patch("streamlit.button")
+    @patch("streamlit.rerun")
+    @patch("streamlit.write")
+    @patch("streamlit.json")
+    def test_run_with_json_data(self, mock_json, mock_write, mock_rerun, mock_button, mock_session_state):
+        # Mock data
+        mock_json_data = {"key": "value"}
+        mock_session_state.get.return_value = mock_json_data
+        mock_button.side_effect = [False, True]  # Simulate "Done" button clicked on second call
+
+        # Mock class and method
+        viewer = JSONViewer()
+        viewer.state_key = "test_key"
+        viewer.add_download_button = MagicMock()
+
+        # First run, no "Done" button click
+        result = viewer.run()
+        self.assertTrue(result)
+        mock_session_state.get.assert_called_once_with(viewer.state_key)
+        mock_write.assert_called_once()
+        viewer.add_download_button.assert_called_once_with(mock_json_data)
+        mock_json.assert_called_once_with(mock_json_data)
+
+        # Second run, "Done" button clicked
+        mock_button.reset_mock()  # Reset to test "Done" functionality
+        mock_button.side_effect = [True]  # Simulate "Done" button click
+        result = viewer.run()
+        self.assertTrue(result)
+        mock_session_state.__delitem__.assert_called_once_with(viewer.state_key)
+        mock_rerun.assert_called_once()
+
+    @patch("streamlit.session_state")
+    def test_run_without_json_data(self, mock_session_state):
+        # No JSON data in session state
+        mock_session_state.get.return_value = None
+
+        # Mock class and method
+        viewer = JSONViewer()
+        viewer.state_key = "test_key"
+
+        result = viewer.run()
+        self.assertFalse(result)
+        mock_session_state.get.assert_called_once_with(viewer.state_key)
 
 if __name__ == "__main__":
     unittest.main()
