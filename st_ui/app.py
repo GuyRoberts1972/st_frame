@@ -36,7 +36,7 @@ def handle_template_selection():
 
     # Callback: Select
     def on_select(option_key, sub_option_key, _sub_option_dict):
-        st.session_state.pdata_selected_use_case_path = os.path.join(option_key, sub_option_key)
+        st.session_state.pdata_selected_use_case_path = f"{option_key}/{sub_option_key}"
         options_selector.clear_state()
         st.rerun()
 
@@ -113,7 +113,7 @@ def main():
     """ Main execution """
 
     # Wide
-    st.set_page_config(layout="wide", page_icon='\U0001F411')
+    st.set_page_config(page_title="Labs Platform GenAI Tool", page_icon='\U0001F411', layout="wide")
 
     # Check auth
     if not handle_user_auth():

@@ -199,6 +199,7 @@ class S3StorageBackend(StorageBackend):
 
     def _normalize_path(self, path: str) -> str:
         """ Ensure path consistency for S3 keys """
+        normalized = path.replace('\\', '/')
         normalized = path.lstrip("/")
         if self.folder:
             normalized = f"{self.folder.rstrip('/')}/{normalized}"
