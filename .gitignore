@@ -8,8 +8,8 @@
 # POC
 poc/
 
-# Streamlit (including secrets.toml)
-.streamlit/
+# Streamlit secrets
+.streamlit/secrets.toml
 
 # PyTest coverage
 .coverage

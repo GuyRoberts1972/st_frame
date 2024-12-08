@@ -7,7 +7,6 @@ class FloatingFooter:
     CSS_TEMPLATE = """
     <style>
     .banner {{
-        background-color: white;
         color: {text_color};
         padding: 10px;
         text-align: right;

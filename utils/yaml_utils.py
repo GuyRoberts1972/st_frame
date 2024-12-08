@@ -194,7 +194,11 @@ class YAMLUtils:
         for line in lines:
             if line.strip().startswith('#!local_include'):
                 template_path = StorageBackend.dirname(file_path)
-                include_lines = self._process_include(line, self.use_case_templates_store, template_path)
+                include_lines = self._process_include(
+                    line,
+                    self.use_case_templates_store,
+                    template_path
+                )
                 processed_lines.extend(include_lines)
             elif line.strip().startswith('#!lib_include'):
                 include_lines = self._process_include(line, self.templates_include_lib_store)
@@ -227,7 +231,3 @@ class YAMLUtils:
         content = store.read_text(include_path)
         lines = content.split('\n')
         return lines
-
-
-
-

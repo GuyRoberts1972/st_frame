@@ -203,6 +203,9 @@ class SideBarStateMgr:
                 # No manual select - use the menus state
                 manual_select = None
 
+            # Use the primary colour as hover
+            hover_color = st.get_option('theme.primaryColor')
+
             # Create the widget
             state_nav_heading = SideBarStateMgr.STRINGS['STATE_NAV_HEADING']
             state_icons = ["chat-left"] * len(saved_states)
@@ -214,7 +217,7 @@ class SideBarStateMgr:
                 default_index=0,
                 on_change=on_state_select,
                 key='sbsm_on_state_select_key',
-                styles={ "nav-link": { "--hover-color": "#eee" }},
+                styles={ "nav-link": { "--hover-color": hover_color }},
                 manual_select=manual_select
             )
 
@@ -222,14 +225,15 @@ class SideBarStateMgr:
         """ Create a containe for widgets with styling """
 
         # Custom styling for the container
+        container_bkg_col = st.get_option('theme.backgroundColor')
+
         css_template = f"""
             <style>
             /* The container */
             .st-key-{container_key} {{
-                border: 2px solid white;
                 padding: 20px;
                 border-radius: .5rem;
-                background-color: white;
+                background-color: {container_bkg_col};
             }}
 
             /* Get rid of text box message */
