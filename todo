@@ -87,7 +87,7 @@
 
  - Infrastructure as code
 
-    - [ ] AWS ECS support
+    - [x] AWS ECS support
     - [ ] EAA style security group config
 
 # User Authentication

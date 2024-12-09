@@ -9,30 +9,38 @@ from botocore.exceptions import ClientError
 import toml
 from utils.aws_utils import AWSUtils
 
-class ConfigEnv:
-    """ Exposes methods to get environment variables with defaults """
+class VersionInfo:
+    """ Read version info from a TOML file """
 
-    @staticmethod
-    def get_config_path() -> str:
-        """ The location of the config """
-        return os.getenv('CONFIG_PATH', 'local::default')
+    def __init__(self, toml_path: str='version_info.toml'):
+        """ Initialize the class with the path to the TOML file """
+        self.config = self._load_toml(toml_path)
 
-    @staticmethod
-    def get_github_run_number() -> str:
+    def _load_toml(self, toml_path: str) -> dict:
+        """ Load the TOML file and return its contents as a dictionary """
+        try:
+            with open(toml_path, 'r', encoding='utf-8') as f:
+                return toml.load(f)
+        except FileNotFoundError:
+            logging.warning(f"Warning: TOML file not found at {toml_path}. Using default values.")
+            return {}
+        except toml.TomlDecodeError:
+            logging.warning(f"Warning: Invalid TOML file at {toml_path}. Using default values.")
+            return {}
+
+    def get_github_run_number(self) -> str:
         """ The GitHub run number of the build """
-        return os.getenv('GITHUB_RUN_NUMBER', 'n/a')
+        return self.config.get('build', {}).get('github_run_number', 'n/a')
 
-    @staticmethod
-    def get_github_ref() -> str:
-        """ The commit rf for the build """
-        return os.getenv('GITHUB_REF', 'n/a')
+    def get_github_ref(self) -> str:
+        """ The commit ref for the build """
+        return self.config.get('build', {}).get('github_ref', 'n/a')
 
-    @staticmethod
-    def get_github_sha() -> str:
+    def get_github_sha(self) -> str:
         """ The commit sha that triggered the build """
-        return os.getenv('GITHUB_SHA', 'n/a')
+        return self.config.get('build', {}).get('github_sha', 'n/a')
 
-class ConfigParamRetriever:
+class ConfigParamRetriever():
     """ Implements secure parameter retreival from configured location
 
     /*
@@ -48,10 +56,15 @@ class ConfigParamRetriever:
         """ Read enviroment variable for config location (if set), otherwise default """
 
         if config_path is None:
-            self.config_path = ConfigEnv.get_config_path()
+            self.config_path = ConfigParamRetriever.get_config_path_from_env()
         else:
             self.config_path = config_path
 
+    @staticmethod
+    def get_config_path_from_env():
+        """ Get the path to the config from environment, provide default"""
+
+        return os.getenv('CONFIG_PATH', 'local::default')
 
     def get_local_configs(self):
         """ Returns the list of local configs available """
@@ -278,13 +291,15 @@ class ConfigStore(ConfigParamRetriever):
         return f"{adjective}-{noun}"
 
     @staticmethod
-    def get_config_status_string():
-        """ Return a string summarising the config status """
+    def get_config_and_version_string():
+        """ Return a string summarising the config status and version info """
 
-        config_path = ConfigEnv.get_config_path()
-        git_commit_ref = ConfigEnv.get_github_ref()
-        git_commit_sha = ConfigEnv.get_github_sha()
-        github_run_number = ConfigEnv.get_github_run_number()
+        version_info = VersionInfo()
+
+        config_path = ConfigParamRetriever.get_config_path_from_env()
+        git_commit_ref = version_info.get_github_ref()
+        git_commit_sha = version_info.get_github_sha()
+        github_run_number = version_info.get_github_run_number()
         friendly_name = ConfigStore.generate_friendly_name(git_commit_sha)
 
         _aws_configured, aws_status = AWSUtils.is_aws_configured()

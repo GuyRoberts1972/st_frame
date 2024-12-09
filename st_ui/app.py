@@ -94,7 +94,7 @@ def load_and_run_static_method(relative_path, class_name, method_name, *args, **
 def show_version_and_config():
     """ Show some version and config info in the footer """
 
-    footer_text = ConfigStore.get_config_status_string()
+    footer_text = ConfigStore.get_config_and_version_string()
     FloatingFooter.show(footer_text)
 
 def handle_user_auth():

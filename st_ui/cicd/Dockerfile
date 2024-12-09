@@ -26,10 +26,17 @@ ENV GITHUB_RUN_NUMBER=$GITHUB_RUN_NUMBER
 ENV GITHUB_REF=$GITHUB_REF
 ENV GITHUB_SHA=$GITHUB_SHA
 
-# Copy application code
+# Copy application code and config
 COPY utils ./utils
 COPY flow_apps ./flow_apps
 COPY st_ui ./st_ui
+COPY .streamlit/config.toml ./.streamlit/config.toml
+
+# Create version info file
+RUN echo "\n[build]" >> ./version_info.toml && \
+    echo "github_run_number = \"$GITHUB_RUN_NUMBER\"" >> ./version_info.toml && \
+    echo "github_ref = \"$GITHUB_REF\"" >> ./version_info.toml  && \
+    echo "github_sha = \"$GITHUB_SHA\"" >> ./version_info.toml
 
 # Copy local data
 COPY local_data ./local_data

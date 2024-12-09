@@ -2,10 +2,12 @@
 import unittest
 from unittest.mock import patch, MagicMock
 import json
+import tempfile
+import os
 import logging
 import toml
 from botocore.exceptions import ClientError
-from utils.config_utils import ConfigStore
+from utils.config_utils import ConfigStore, VersionInfo
 
 
 class TestConfigStoreLocalStorage(unittest.TestCase):
@@ -39,6 +41,106 @@ class TestConfigStoreLocalStorage(unittest.TestCase):
                 config_path='local::bad'
                 )
 
+class TestVersionInfo(unittest.TestCase):
+    def setUp(self):
+        self.temp_dir = tempfile.mkdtemp()
+        self.toml_path = os.path.join(self.temp_dir, 'version_info.toml')
+        self.test_data = {
+            'build': {
+                'github_run_number': '123',
+                'github_ref': 'refs/heads/main',
+                'github_sha': 'abcdef1234567890'
+            }
+        }
+        with open(self.toml_path, 'w', encoding='utf-8') as f:
+            toml.dump(self.test_data, f)
+
+    def tearDown(self):
+        os.remove(self.toml_path)
+        os.rmdir(self.temp_dir)
+
+    def test_load_toml(self):
+        version_info = VersionInfo(self.toml_path)
+        self.assertEqual(version_info.config, self.test_data)
+
+    def test_get_github_run_number(self):
+        version_info = VersionInfo(self.toml_path)
+        self.assertEqual(version_info.get_github_run_number(), '123')
+
+    def test_get_github_ref(self):
+        version_info = VersionInfo(self.toml_path)
+        self.assertEqual(version_info.get_github_ref(), 'refs/heads/main')
+
+    def test_get_github_sha(self):
+        version_info = VersionInfo(self.toml_path)
+        self.assertEqual(version_info.get_github_sha(), 'abcdef1234567890')
+
+    def test_file_not_found(self):
+        with self.assertLogs(level='WARNING') as cm:
+            version_info = VersionInfo('non_existent_file.toml')
+
+        self.assertEqual(version_info.get_github_run_number(), 'n/a')
+
+class TestConfigStore(unittest.TestCase):
+    @patch.dict(os.environ, {'CONFIG_PATH': 'local::test'})
+    def test_get_config_path_from_env(self):
+        self.assertEqual(ConfigStore.get_config_path_from_env(), 'local::test')
+
+    @patch('utils.config_utils.ConfigStore._fetch_section_from_local')
+    def test_fetch_section_local(self, mock_fetch):
+        mock_fetch.return_value = {'key': 'value'}
+        config_store = ConfigStore('local::test')
+        result = config_store['test_section']
+        self.assertEqual(result, {'key': 'value'})
+        mock_fetch.assert_called_once_with('test_section')
+
+    @patch('utils.config_utils.ConfigStore._fetch_section_from_ssm_param')
+    def test_fetch_section_ssm(self, mock_fetch):
+        mock_fetch.return_value = {'key': 'value'}
+        config_store = ConfigStore('ssm::test')
+        result = config_store['test_section']
+        self.assertEqual(result, {'key': 'value'})
+        mock_fetch.assert_called_once_with('test_section')
+
+    @patch('utils.config_utils.ConfigStore._fetch_section')
+    def test_get_with_default(self, mock_fetch):
+        # Create a ClientError exception
+        error_response = {'Error': {'Code': 'ParameterNotFound', 'Message': 'Parameter not found.'}}
+        mock_fetch.side_effect = ClientError(error_response, 'GetParameter')
+
+        config_store = ConfigStore()
+        result = config_store.get('non_existent', default='default_value')
+        self.assertEqual(result, 'default_value')
+
+    @patch('utils.config_utils.ConfigStore._fetch_section')
+    def test_nested_get(self, mock_fetch):
+        mock_fetch.return_value = {'nested': {'key': 'value'}}
+        result = ConfigStore.nested_get('section.nested.key')
+        self.assertEqual(result, 'value')
+
+    def test_generate_friendly_name(self):
+        name1 = ConfigStore.generate_friendly_name('commit1')
+        name2 = ConfigStore.generate_friendly_name('commit2')
+        self.assertNotEqual(name1, name2)
+        self.assertRegex(name1, r'^[a-z]+-[a-z]+$')
+        self.assertRegex(name2, r'^[a-z]+-[a-z]+$')
+
+    @patch('utils.config_utils.VersionInfo')
+    @patch('utils.config_utils.AWSUtils.is_aws_configured')
+    def test_get_config_and_version_string(self, mock_aws, mock_version_info):
+        mock_version_info.return_value.get_github_ref.return_value = 'main'
+        mock_version_info.return_value.get_github_sha.return_value = 'abcdef'
+        mock_version_info.return_value.get_github_run_number.return_value = '123'
+        mock_aws.return_value = (True, 'Configured')
+
+        with patch.dict(os.environ, {'CONFIG_PATH': 'local::test'}):
+            result = ConfigStore.get_config_and_version_string()
+
+        self.assertIn('SHA:', result)
+        self.assertIn('RUN: 123', result)
+        self.assertIn('REF: main', result)
+        self.assertIn('CONFIG: local::test', result)
+        self.assertIn('AWS: Configured', result)
 
 class TestConfigStoreAWSSSM(unittest.TestCase):
 
